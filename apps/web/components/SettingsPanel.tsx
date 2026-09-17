@@ -115,6 +115,26 @@ export default function SettingsPanel({
               placeholder="qwen2.5:14b"
               style={inputStyle}
             />
+            <div style={{ marginTop: "8px", display: "flex", gap: "8px" }}>
+              <button
+                onClick={() => setLocal({ ...local, model: "qwen2.5:7b" })}
+                style={{
+                  flex: 1, padding: "6px", borderRadius: "8px", fontSize: "12px",
+                  background: local.model === "qwen2.5:7b" ? "rgba(0,255,157,0.2)" : "var(--bg-3)",
+                  border: "1px solid var(--border)",
+                  color: local.model === "qwen2.5:7b" ? "var(--ok)" : "var(--text-dim)",
+                }}
+              >⚡ Rapide (7B)</button>
+              <button
+                onClick={() => setLocal({ ...local, model: "qwen2.5:14b" })}
+                style={{
+                  flex: 1, padding: "6px", borderRadius: "8px", fontSize: "12px",
+                  background: local.model === "qwen2.5:14b" ? "rgba(124,77,255,0.2)" : "var(--bg-3)",
+                  border: "1px solid var(--border)",
+                  color: local.model === "qwen2.5:14b" ? "var(--accent-2)" : "var(--text-dim)",
+                }}
+              >🧠 Intelligent (14B)</button>
+            </div>
             {models.length > 0 && (
               <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
                 {models.map((m) => (
