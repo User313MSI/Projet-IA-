@@ -1,9 +1,24 @@
 import type { ToolDefinition, ToolCall, ToolResult } from "@ia-app/shared";
 import { uid } from "@ia-app/shared";
+import { makePathPolicy, type PathPolicy } from "./security/safe-path";
+import {
+  makeCommandPolicy,
+  type CommandPolicy,
+} from "./security/safe-command";
 
 export interface ToolContext {
   cwd: string;
   log: (msg: string) => void;
+  /** Politique de confinement des chemins (workspace + liste noire). */
+  pathPolicy: PathPolicy;
+  /** Politique d'allowlist des commandes shell (+ mode power user). */
+  commandPolicy: CommandPolicy;
+  /**
+   * Handler d'approbation pour les actions sensibles. Doit retourner `true`
+   * si l'utilisateur accepte, `false` sinon. Si absent, toute action sensible
+   * est refusée (défense en profondeur).
+   */
+  approve?: (call: ToolCall) => Promise<boolean>;
 }
 
 export interface Tool {
@@ -12,6 +27,27 @@ export interface Tool {
     args: Record<string, unknown>,
     ctx: ToolContext
   ) => Promise<ToolResult>;
+}
+
+/**
+ * Construit un contexte d'exécution des outils avec les politiques de sécurité
+ * d'Aegis. Par défaut, le handler `approve` refuse tout : un handler explicite
+ * doit être fourni pour autoriser les actions sensibles.
+ */
+export function makeContext(
+  cwd: string,
+  opts?: Partial<
+    Pick<ToolContext, "approve" | "pathPolicy" | "commandPolicy" | "log">
+  >
+): ToolContext {
+  const powerUser = opts?.commandPolicy?.powerUser ?? false;
+  return {
+    cwd,
+    log: opts?.log ?? (() => {}),
+    pathPolicy: opts?.pathPolicy ?? makePathPolicy(cwd),
+    commandPolicy: opts?.commandPolicy ?? makeCommandPolicy(powerUser),
+    approve: opts?.approve,
+  };
 }
 
 export class ToolRegistry {

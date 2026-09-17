@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Settings, Theme } from "@ia-app/shared";
+import { apiFetch } from "../lib/client";
 
 interface Props {
   settings: Settings;
@@ -28,13 +29,12 @@ export default function SettingsPanel({
   const [checked, setChecked] = useState(false);
 
   const checkConnection = async () => {
-    const res = await fetch("/api/settings", {
+    const res = await apiFetch("/api/settings", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ollamaUrl: local.ollamaUrl }),
     });
     await res.json();
-    const res2 = await fetch("/api/settings");
+    const res2 = await apiFetch("/api/settings");
     const data = await res2.json();
     setModels(data.models ?? []);
     setChecked(true);
@@ -43,9 +43,8 @@ export default function SettingsPanel({
 
   const save = async () => {
     setSaving(true);
-    await fetch("/api/settings", {
+    await apiFetch("/api/settings", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(local),
     });
     setSaving(false);
@@ -282,6 +281,43 @@ export default function SettingsPanel({
               onChange={(e) => setLocal({ ...local, fontSize: Number(e.target.value) })}
               style={{ width: "100%", accentColor: "var(--accent)" }}
             />
+          </Field>
+
+          <Field label="Mode power user">
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                cursor: "pointer",
+                padding: "8px 0",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={local.powerUser}
+                onChange={(e) =>
+                  setLocal({ ...local, powerUser: e.target.checked })
+                }
+                style={{ width: "18px", height: "18px", accentColor: "var(--warn)" }}
+              />
+              <span style={{ fontSize: "13px", color: "var(--text-dim)" }}>
+                Autoriser les commandes hors liste blanche <b>(avec approbation explicite)</b>.
+                Les commandes destructrices (rm -rf, curl, sudo…) restent interdites.
+              </span>
+            </label>
+            {local.powerUser && (
+              <div
+                style={{
+                  marginTop: "6px",
+                  fontSize: "11px",
+                  color: "var(--warn)",
+                }}
+              >
+                ⚠ Mode power user activé : chaque commande sensible demandera une
+                approbation dans le chat.
+              </div>
+            )}
           </Field>
 
           <Field label="Prompt système">

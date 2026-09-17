@@ -4,6 +4,12 @@ import { useRef, useState, type RefObject } from "react";
 import type { ChatMessage, ToolCall, ToolResult } from "@ia-app/shared";
 import Markdown from "./Markdown";
 
+export interface PendingApproval {
+  approvalId: string;
+  toolCall: ToolCall;
+  reason: string;
+}
+
 interface Props {
   messages: ChatMessage[];
   input: string;
@@ -19,6 +25,8 @@ interface Props {
   quickPrompts: string[];
   promptHistory: string[];
   model: string;
+  pendingApproval: PendingApproval | null;
+  onRespondApproval: (approvalId: string, accepted: boolean) => void;
 }
 
 function MessageBubble({
@@ -176,6 +184,102 @@ function ToolCard({
   );
 }
 
+function ApprovalCard({
+  approval,
+  onRespond,
+}: {
+  approval: PendingApproval;
+  onRespond: (approvalId: string, accepted: boolean) => void;
+}) {
+  const args = approval.toolCall.arguments;
+  const preview =
+    approval.toolCall.name === "run_command"
+      ? String(args.command ?? "")
+      : approval.toolCall.name === "write_file"
+        ? String(args.path ?? "")
+        : JSON.stringify(args);
+  return (
+    <div
+      style={{
+        margin: "12px 0",
+        padding: "14px 16px",
+        borderRadius: "12px",
+        background: "rgba(255,180,0,0.06)",
+        border: "1px solid rgba(255,180,0,0.4)",
+        boxShadow: "0 0 18px rgba(255,180,0,0.08)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          marginBottom: "8px",
+        }}
+      >
+        <span style={{ color: "var(--warn)", fontSize: "14px" }}>⚠</span>
+        <span style={{ color: "var(--warn)", fontWeight: 700, fontSize: "13px" }}>
+          APPROBATION REQUISE
+        </span>
+      </div>
+      <div style={{ fontSize: "13px", color: "var(--text)", marginBottom: "6px" }}>
+        L'IA veut exécuter <b>{approval.toolCall.name}</b> — {approval.reason}
+      </div>
+      <div
+        style={{
+          fontFamily: "var(--mono)",
+          fontSize: "12px",
+          color: "var(--text-dim)",
+          background: "var(--bg-1)",
+          padding: "8px",
+          borderRadius: "6px",
+          marginBottom: "12px",
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+          maxHeight: "120px",
+          overflowY: "auto",
+        }}
+      >
+        {preview}
+      </div>
+      <div style={{ display: "flex", gap: "10px" }}>
+        <button
+          onClick={() => onRespond(approval.approvalId, true)}
+          style={{
+            flex: 1,
+            padding: "10px",
+            borderRadius: "10px",
+            border: "1px solid rgba(0,255,157,0.4)",
+            background: "rgba(0,255,157,0.12)",
+            color: "var(--ok)",
+            fontWeight: 700,
+            fontSize: "13px",
+            cursor: "pointer",
+          }}
+        >
+          ✓ Accepter
+        </button>
+        <button
+          onClick={() => onRespond(approval.approvalId, false)}
+          style={{
+            flex: 1,
+            padding: "10px",
+            borderRadius: "10px",
+            border: "1px solid rgba(255,80,80,0.4)",
+            background: "rgba(255,80,80,0.12)",
+            color: "var(--err)",
+            fontWeight: 700,
+            fontSize: "13px",
+            cursor: "pointer",
+          }}
+        >
+          ✕ Refuser
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ChatView({
   messages,
   input,
@@ -191,6 +295,8 @@ export default function ChatView({
   quickPrompts,
   promptHistory,
   model,
+  pendingApproval,
+  onRespondApproval,
 }: Props) {
   const taRef = useRef<HTMLTextAreaElement>(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -324,6 +430,13 @@ export default function ChatView({
           <div className="loading-dots" style={{ textAlign: "center", padding: "12px", color: "var(--accent)", fontSize: "20px" }}>
             <span>●</span> <span>●</span> <span>●</span>
           </div>
+        )}
+
+        {pendingApproval && (
+          <ApprovalCard
+            approval={pendingApproval}
+            onRespond={onRespondApproval}
+          />
         )}
 
         {toolList.length > 0 && (

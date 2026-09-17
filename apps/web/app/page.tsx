@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useRef, useState, useCallback } from "react";
 import type {
   ChatMessage,
@@ -9,10 +8,17 @@ import type {
   ToolResult,
 } from "@ia-app/shared";
 import { uid } from "@ia-app/shared";
+import { apiFetch } from "../lib/client";
 import ChatView from "../components/ChatView";
 import Sidebar from "../components/Sidebar";
 import SettingsPanel from "../components/SettingsPanel";
 import ThemeApplier from "../components/ThemeApplier";
+
+export interface PendingApproval {
+  approvalId: string;
+  toolCall: ToolCall;
+  reason: string;
+}
 
 const QUICK_PROMPTS = [
   "Bonjour, qui es-tu ?",
@@ -38,16 +44,19 @@ export default function Page() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [promptHistory, setPromptHistory] = useState<string[]>([]);
   const [tokSpeed, setTokSpeed] = useState(0);
+  const [pendingApproval, setPendingApproval] = useState<PendingApproval | null>(
+    null
+  );
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const loadConversations = useCallback(async () => {
-    const res = await fetch("/api/conversations");
+    const res = await apiFetch("/api/conversations");
     const data = await res.json();
     setConversations(data);
   }, []);
 
   const loadSettings = useCallback(async () => {
-    const res = await fetch("/api/settings");
+    const res = await apiFetch("/api/settings");
     const data = await res.json();
     setSettings(data.settings);
     setReachable(data.reachable);
@@ -63,24 +72,27 @@ export default function Page() {
   }, [loadConversations, loadSettings]);
 
   const selectConversation = useCallback(async (id: string) => {
-    const res = await fetch(`/api/conversations/${id}`);
+    const res = await apiFetch(`/api/conversations/${id}`);
     const conv: Conversation = await res.json();
     setActiveId(id);
     setMessages(conv.messages);
+    setPendingApproval(null);
   }, []);
 
   const newConversation = useCallback(async () => {
     setActiveId(null);
     setMessages([]);
     setActiveTools({});
+    setPendingApproval(null);
   }, []);
 
   const deleteConversation = useCallback(
     async (id: string) => {
-      await fetch(`/api/conversations/${id}`, { method: "DELETE" });
+      await apiFetch(`/api/conversations/${id}`, { method: "DELETE" });
       if (id === activeId) {
         setActiveId(null);
         setMessages([]);
+        setPendingApproval(null);
       }
       loadConversations();
     },
@@ -102,9 +114,8 @@ export default function Page() {
 
   const renameConversation = useCallback(
     async (id: string, title: string) => {
-      await fetch("/api/conversations", {
+      await apiFetch("/api/conversations", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, title }),
       });
       loadConversations();
@@ -113,7 +124,7 @@ export default function Page() {
   );
 
   const exportConversation = useCallback(async (id: string) => {
-    const res = await fetch(`/api/conversations/${id}`);
+    const res = await apiFetch(`/api/conversations/${id}`);
     const conv: Conversation = await res.json();
     const lines: string[] = [`# ${conv.title}\n`];
     lines.push(`*Exporté le ${new Date().toLocaleString("fr-FR")}*\n`);
@@ -131,6 +142,25 @@ export default function Page() {
     URL.revokeObjectURL(url);
   }, []);
 
+  const respondApproval = useCallback(
+    async (approvalId: string, accepted: boolean) => {
+      setPendingApproval(null);
+      try {
+        await apiFetch("/api/approve", {
+          method: "POST",
+          body: JSON.stringify({
+            conversationId: activeId,
+            approvalId,
+            accepted,
+          }),
+        });
+      } catch {
+        // Le stream se terminera en refus auto côté serveur si la requête échoue.
+      }
+    },
+    [activeId]
+  );
+
   const sendMessage = useCallback(async () => {
     const text = input.trim();
     if (!text || streaming) return;
@@ -146,6 +176,7 @@ export default function Page() {
     setStreaming(true);
     setActiveTools({});
     setTokSpeed(0);
+    setPendingApproval(null);
 
     setPromptHistory((h) => {
       const next = [text, ...h.filter((p) => p !== text)].slice(0, 20);
@@ -167,9 +198,8 @@ export default function Page() {
     let createdConvId: string | null = activeId;
 
     try {
-      const res = await fetch("/api/chat", {
+      const res = await apiFetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ conversationId: activeId, message: text }),
       });
 
@@ -199,6 +229,8 @@ export default function Page() {
             step?: number;
             message?: string;
             finalMessage?: ChatMessage;
+            approvalId?: string;
+            reason?: string;
           };
 
           if (event.type === "step" && event.message && !createdConvId) {
@@ -226,6 +258,17 @@ export default function Page() {
               },
             }));
           }
+          if (
+            event.type === "approval_required" &&
+            event.approvalId &&
+            event.toolCall
+          ) {
+            setPendingApproval({
+              approvalId: event.approvalId,
+              toolCall: event.toolCall,
+              reason: event.reason ?? "action sensible",
+            });
+          }
           if (event.type === "tool_result" && event.toolResult) {
             setActiveTools((t) => ({
               ...t,
@@ -241,8 +284,10 @@ export default function Page() {
                 running: false,
               },
             }));
+            setPendingApproval(null);
           }
           if (event.type === "error" && event.message) {
+            setPendingApproval(null);
             setMessages((m) =>
               m.map((msg) =>
                 msg.id === assistantId
@@ -269,6 +314,7 @@ export default function Page() {
         }
       }
     } catch (e) {
+      setPendingApproval(null);
       setMessages((m) =>
         m.map((msg) =>
           msg.id === assistantId
@@ -287,6 +333,7 @@ export default function Page() {
       setActiveTools({});
       loadConversations();
       setTokSpeed(0);
+      setPendingApproval(null);
     }
   }, [input, streaming, activeId, loadConversations]);
 
@@ -294,12 +341,12 @@ export default function Page() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, pendingApproval]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
- e.preventDefault();
+        e.preventDefault();
         setShowSettings((s) => !s);
       }
     };
@@ -324,7 +371,9 @@ export default function Page() {
 
   useEffect(() => {
     if (typeof Notification !== "undefined" && Notification.permission === "default") {
-      try { Notification.requestPermission(); } catch {}
+      try {
+        Notification.requestPermission();
+      } catch {}
     }
   }, []);
 
@@ -367,6 +416,8 @@ export default function Page() {
         quickPrompts={messages.length === 0 ? QUICK_PROMPTS : []}
         promptHistory={promptHistory}
         model={settings?.model ?? "qwen2.5:14b"}
+        pendingApproval={pendingApproval}
+        onRespondApproval={respondApproval}
       />
 
       {showSettings && settings && (

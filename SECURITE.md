@@ -181,15 +181,30 @@ détectée.
 ## 4. Ce qui reste à faire (recommandations)
 
 ### Court terme
-- **Approbation côté UI** : brancher un vrai mécanisme d'approval dans le
-  stream SSE (événement `approval_required` → bouton « Approuver / Refuser »
-  dans `ChatView`). Actuellement l'`Agent` accepte un handler `approve`, mais la
-  route `/api/chat` ne le câble pas encore → par défaut, les actions sensibles
-  sont **refusées** (sûr mais bloque l'agent). Implémenter une boucle
-  d'approbation asynchrone est l'étape suivante.
+- **~~Approbation côté UI~~** (fait par **Pont**) : le mécanisme d'approval
+  est désormais câblé dans le stream SSE. L'`Agent` émet un événement
+  `approval_required` (id + détail de l'outil) ; la route `/api/chat` passe un
+  handler `approve` qui stocke une promesse en attente dans un registre
+  (`packages/agent-core/src/approvals.ts`), résolue par `POST /api/approve`
+  (guard token + rate limit). L'UI affiche une carte « Accepter / Refuser »
+  (`ChatView.ApprovalCard`). Refus auto après **120 s** sans réponse. Le mode
+  power user est exposé dans les réglages (toggle) ; sans lui, les commandes
+  hors allowlist restent refusées même avec approbation. Les commandes
+  destructrices (rm -rf, curl, sudo…) restent **toujours** refusées.
+- **Câblage des garde-fous d'Aegis** (fait par **Pont**) : les modules de
+  sécurité (`safe-path`, `safe-command`, `safe-url`, `sanitize`, `math-eval`)
+  sont désormais intégrés au moteur (`tools.ts`, `default-tools.ts`,
+  `agent.ts`, `ollama.ts`, `advanced-tools.ts`) via `makeContext` — le registre
+  applique confinement de chemins, allowlist commandes, approbation et parseur
+  math sécurisé. Le `OllamaClient` valide l'URL loopback à la construction et
+  au `setBaseUrl`. Les routes `/api/chat` et `/api/settings` appliquent le
+  guard (token + rate limit) ; `/api/settings` valide `ollamaUrl` avant
+  sauvegarde.
 - **Chiffrement au repos** du `systemPrompt` et des conversations sensibles
   (optionnel) — actuellement 0600 en clair.
 - **Audit des dépendances** (`pnpm audit`) en CI.
+- **Guard sur les routes `/api/conversations`** (les routes lecture/liste
+  conversations n'appliquent pas encore le guard token ; à généraliser).
 
 ### Moyen terme
 - **Sandbox OS** pour `run_command` (ex. sous-conteneur ou utilisateur

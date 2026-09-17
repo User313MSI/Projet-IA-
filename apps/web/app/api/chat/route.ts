@@ -2,20 +2,27 @@ import type { NextRequest } from "next/server";
 import { Agent, memory } from "@ia-app/agent-core";
 import type { ChatMessage, AgentStreamEvent } from "@ia-app/shared";
 import { uid } from "@ia-app/shared";
+import { guard, readJsonBody } from "../../../lib/auth";
+import { makeApprovalHandler, clearConversationApprovals } from "../../../lib/approvals";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  let body: { conversationId?: string; message: string };
-  try {
-    body = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: "JSON invalide" }), {
-      status: 400,
+  const g = await guard(req);
+  if (g) return g;
+
+  const parsed = await readJsonBody(req);
+  if (!parsed.ok) {
+    return new Response(JSON.stringify({ error: parsed.error }), {
+      status: parsed.status,
       headers: { "Content-Type": "application/json" },
     });
   }
+  const body = parsed.body as {
+    conversationId?: string;
+    message: string;
+  };
 
   if (!body.message?.trim()) {
     return new Response(JSON.stringify({ error: "Message vide" }), {
@@ -34,6 +41,7 @@ export async function POST(req: NextRequest) {
       body.message.slice(0, 50)
     );
   }
+  const conversationId = conv.id;
 
   const userMsg: ChatMessage = {
     id: uid("msg"),
@@ -44,7 +52,17 @@ export async function POST(req: NextRequest) {
   conv.messages.push(userMsg);
   await memory.saveConversation(conv);
 
-  const agent = new Agent({ settings, cwd: process.cwd() });
+  // Handler d'approbation : suspend le stream en créant une approbation en
+  // attente (résolue par POST /api/approve, ou refus auto après 120s). L'Agent
+  // émet auparavant l'événement `approval_required` que le client affiche.
+  const approveHandler = makeApprovalHandler(conversationId);
+
+  const agent = new Agent({
+    settings,
+    cwd: process.cwd(),
+    powerUser: settings.powerUser,
+    approve: approveHandler,
+  });
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -52,13 +70,10 @@ export async function POST(req: NextRequest) {
       const send = (e: AgentStreamEvent) => {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(e)}\n\n`));
       };
-
-      send({ type: "step", step: 0, message: conv!.id });
-
+      send({ type: "step", step: 0, message: conversationId });
       let assistantText = "";
       const assistantId = uid("msg");
       let stepCount = 0;
-
       try {
         for await (const event of agent.run(conv!.messages)) {
           stepCount++;
@@ -92,8 +107,10 @@ export async function POST(req: NextRequest) {
           type: "error",
           message: e instanceof Error ? e.message : String(e),
         });
+      } finally {
+        // Refus auto de toute approbation restée sans réponse.
+        clearConversationApprovals(conversationId);
       }
-
       send({ type: "done" });
       controller.close();
     },

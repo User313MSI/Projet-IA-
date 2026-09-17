@@ -63,6 +63,13 @@ export interface Settings {
   ollamaUrl: string;
   theme: Theme;
   fontSize: number;
+  /**
+   * Mode power user : autorise l'exécution de commandes hors liste blanche
+   * (toujours avec approbation utilisateur explicite). Les commandes
+   * destructrices (rm -rf, curl, sudo…) restent interdites dans tous les cas.
+   * Désactivé par défaut.
+   */
+  powerUser: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -75,6 +82,7 @@ export const DEFAULT_SETTINGS: Settings = {
   ollamaUrl: "http://127.0.0.1:11434",
   theme: "nexus",
   fontSize: 15,
+  powerUser: false,
 };
 
 export interface AgentStreamEvent {
@@ -84,13 +92,18 @@ export interface AgentStreamEvent {
     | "tool_result"
     | "step"
     | "done"
-    | "error";
+    | "error"
+    | "approval_required";
   token?: string;
   toolCall?: ToolCall;
   toolResult?: ToolResult;
   step?: number;
   message?: string;
   finalMessage?: ChatMessage;
+  /** Identifiant de la demande d'approbation (pour corréler la réponse client). */
+  approvalId?: string;
+  /** Pourquoi l'approbation est demandée (ex: « commande hors allowlist »). */
+  reason?: string;
 }
 
 export { uid, nowMs, truncate } from "./utils";

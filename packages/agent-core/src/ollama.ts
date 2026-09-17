@@ -1,4 +1,5 @@
 import type { ModelInfo } from "@ia-app/shared";
+import { isLocalOllamaUrl } from "./security/safe-url";
 
 export interface OllamaChatPart {
   role: "system" | "user" | "assistant" | "tool";
@@ -29,10 +30,21 @@ export interface OllamaToolCall {
 }
 
 export class OllamaClient {
-  constructor(private baseUrl: string) {}
+  private baseUrl: string;
+  constructor(baseUrl: string) {
+    const v = isLocalOllamaUrl(baseUrl);
+    if (!v.ok) {
+      throw new Error(`OllamaClient: ${v.error}`);
+    }
+    this.baseUrl = baseUrl.replace(/\/+$/, "");
+  }
 
   setBaseUrl(url: string): void {
-    this.baseUrl = url.replace(/\/$/, "");
+    const v = isLocalOllamaUrl(url);
+    if (!v.ok) {
+      throw new Error(`OllamaClient: ${v.error}`);
+    }
+    this.baseUrl = url.replace(/\/+$/, "");
   }
 
   async listModels(): Promise<ModelInfo[]> {

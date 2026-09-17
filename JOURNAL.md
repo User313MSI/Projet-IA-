@@ -78,6 +78,14 @@
 - Composant ApprovalCard dans l'UI (Accepter / Refuser)
 - Toggle « Mode power user » dans les réglages
 - Tests Vitest pour le mécanisme d'approbation
+- Câblage des modules de sécurité d'Aegis dans le moteur (makeContext, confinement chemins, allowlist commandes, parseur math, validation URL Ollama) — `pnpm test` était ROUGE (makeContext manquant), désormais 71 tests verts
+- Guard token + rate limit appliqué sur /api/chat et /api/settings ; validation ollamaUrl avant sauvegarde
+
+### État final
+- `pnpm test` : 71 tests verts (43 security + 8 tools + 20 approvals)
+- `pnpm typecheck` : OK (4 packages)
+- `pnpm build` : OK (route /api/approve compilée)
+- Sécurité d'Aegis intacte : commandes destructrices toujours refusées, approbation obligatoire, refus auto 120s, aucun auto-accept
 
 ### Fichiers modifiés
 - `packages/shared/src/index.ts` — type `approval_required` + champs, `powerUser` dans Settings

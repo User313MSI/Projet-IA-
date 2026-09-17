@@ -2,6 +2,7 @@ import { promises as fs } from "node:fs";
 import os from "node:os";
 import type { Tool } from "./tools";
 import { ok, err, makeCall } from "./tools";
+import { safeResolve } from "./security/safe-path";
 
 function str(value: unknown, max = 10000): string {
   const s = typeof value === "string" ? value : String(value ?? "");
@@ -33,8 +34,6 @@ export const systemInfoTool: Tool = {
       `RAM totale: ${totalMem} Go`,
       `RAM libre: ${freeMem} Go`,
       `Uptime: ${uptime}h`,
-      `Hostname: ${os.hostname()}`,
-      `Home: ${os.homedir()}`,
     ].join("\n");
     return ok(makeCall("system_info", args), info);
   },
@@ -161,7 +160,12 @@ export const fileSearchTool: Tool = {
   },
   async execute(args, ctx) {
     const pattern = str(args.pattern, 200).toLowerCase();
-    const startDir = args.directory ? str(args.directory) : ctx.cwd;
+    const dirInput = args.directory ? str(args.directory) : ".";
+    const resolved = safeResolve(dirInput, ctx.pathPolicy);
+    if (!resolved.ok) {
+      return err(makeCall("file_search", args), `file_search: ${resolved.error}`);
+    }
+    const startDir = resolved.full!;
     const results: string[] = [];
     async function walk(dir: string, depth: number): Promise<void> {
       if (depth > 3 || results.length > 20) return;

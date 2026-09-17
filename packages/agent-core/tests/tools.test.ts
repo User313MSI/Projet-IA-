@@ -1,7 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { ToolRegistry, makeCall } from "../src/tools.js";
+import { ToolRegistry, makeCall, makeContext } from "../src/tools.js";
 import { createDefaultTools } from "../src/default-tools.js";
 import { DEFAULT_SETTINGS } from "@ia-app/shared";
+
+function ctxWithApproval(approve: () => Promise<boolean>) {
+  return { ...makeContext(process.cwd()), approve };
+}
 
 describe("ToolRegistry", () => {
   it("enregistre et liste les outils", () => {
@@ -25,7 +29,7 @@ describe("ToolRegistry", () => {
     for (const t of createDefaultTools()) reg.register(t);
     const result = await reg.execute(
       makeCall("calc", { expression: "2+2*3" }),
-      { cwd: process.cwd(), log: () => {} }
+      makeContext(process.cwd())
     );
     expect(result.ok).toBe(true);
     expect(result.output).toBe("8");
@@ -36,16 +40,16 @@ describe("ToolRegistry", () => {
     for (const t of createDefaultTools()) reg.register(t);
     const result = await reg.execute(
       makeCall("calc", { expression: "process.exit(1)" }),
-      { cwd: process.cwd(), log: () => {} }
+      makeContext(process.cwd())
     );
     expect(result.ok).toBe(false);
     expect(result.error).toMatch(/non autorisée/);
   });
 
-  it("écrit puis lit un fichier", async () => {
+  it("écrit puis lit un fichier (avec approbation)", async () => {
     const reg = new ToolRegistry();
     for (const t of createDefaultTools()) reg.register(t);
-    const ctx = { cwd: process.cwd(), log: () => {} };
+    const ctx = ctxWithApproval(() => Promise.resolve(true));
     const target = `./__vitest_tmp_${Date.now()}.txt`;
     const w = await reg.execute(
       makeCall("write_file", { path: target, content: "hello" }),
@@ -59,12 +63,22 @@ describe("ToolRegistry", () => {
     await rm(target, { force: true });
   });
 
+  it("refuse l'écriture sans approbation", async () => {
+    const reg = new ToolRegistry();
+    for (const t of createDefaultTools()) reg.register(t);
+    const ctx = makeContext(process.cwd());
+    const target = `./__vitest_denied_${Date.now()}.txt`;
+    const r = await reg.execute(
+      makeCall("write_file", { path: target, content: "x" }),
+      ctx
+    );
+    expect(r.ok).toBe(false);
+    expect(r.error).toMatch(/approbation/);
+  });
+
   it("gère un outil inconnu", async () => {
     const reg = new ToolRegistry();
-    const result = await reg.execute(makeCall("ghost", {}), {
-      cwd: process.cwd(),
-      log: () => {},
-    });
+    const result = await reg.execute(makeCall("ghost", {}), makeContext(process.cwd()));
     expect(result.ok).toBe(false);
     expect(result.error).toMatch(/Outil inconnu/);
   });
@@ -73,5 +87,8 @@ describe("ToolRegistry", () => {
 describe("DEFAULT_SETTINGS", () => {
   it("utilise qwen2.5:14b par défaut", () => {
     expect(DEFAULT_SETTINGS.model).toBe("qwen2.5:14b");
+  });
+  it("powerUser désactivé par défaut", () => {
+    expect(DEFAULT_SETTINGS.powerUser).toBe(false);
   });
 });
