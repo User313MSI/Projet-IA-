@@ -2,12 +2,13 @@
 
 > Chaque agent qui travaille sur ce projet DOIT se déclarer ici avant de commencer,
 > et documenter ce qu'il fait à la fin de son intervention.
+> Format : `Prénom — Date — Rôle — Travail effectué`
 
 ---
 
-## Agent : Vibe (créateur initial)
-**Date :** 2026-09-17
+## Vibe — 2026-09-17 — Créateur initial
 **Rôle :** Création complète du projet NEXUS
+**Commit d'enregistrement :** `chore(agent): Vibe — création du projet NEXUS`
 
 ### Travail effectué
 - Création du monorepo pnpm (apps/web, apps/desktop, packages/shared, packages/agent-core)
