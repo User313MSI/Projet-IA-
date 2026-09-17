@@ -1,0 +1,24 @@
+{
+  "name": "ia-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "IA locale autosuffisante — agent, web app et desktop",
+  "packageManager": "pnpm@10.34.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @ia-app/web dev",
+    "dev:desktop": "pnpm --filter @ia-app/desktop dev",
+    "build": "pnpm -r --filter=...@ia-app/shared build && pnpm -r --filter=...@ia-app/agent-core build && pnpm --filter @ia-app/web build",
+    "build:desktop": "pnpm build && pnpm --filter @ia-app/desktop build",
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r run test",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3"
+  }
+}
