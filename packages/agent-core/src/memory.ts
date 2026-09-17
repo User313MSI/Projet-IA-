@@ -1,0 +1,79 @@
+import { promises as fs } from "node:fs";
+import path from "node:path";
+import type { Conversation, Settings } from "@ia-app/shared";
+import { DEFAULT_SETTINGS, uid } from "@ia-app/shared";
+
+const DATA_DIR = path.join(
+  process.env.HOME ?? process.env.USERPROFILE ?? ".",
+  ".ia-app"
+);
+const CONV_FILE = path.join(DATA_DIR, "conversations.json");
+const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
+
+async function ensureDir(): Promise<void> {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+}
+
+export class Memory {
+  async listConversations(): Promise<Conversation[]> {
+    await ensureDir();
+    try {
+      const raw = await fs.readFile(CONV_FILE, "utf8");
+      const data = JSON.parse(raw) as Conversation[];
+      return data.sort((a, b) => b.updatedAt - a.updatedAt);
+    } catch {
+      return [];
+    }
+  }
+
+  async getConversation(id: string): Promise<Conversation | null> {
+    const all = await this.listConversations();
+    return all.find((c) => c.id === id) ?? null;
+  }
+
+  async saveConversation(conv: Conversation): Promise<void> {
+    await ensureDir();
+    const all = await this.listConversations();
+    const idx = all.findIndex((c) => c.id === conv.id);
+    conv.updatedAt = Date.now();
+    if (idx >= 0) all[idx] = conv;
+    else all.push(conv);
+    await fs.writeFile(CONV_FILE, JSON.stringify(all, null, 2), "utf8");
+  }
+
+  async deleteConversation(id: string): Promise<void> {
+    const all = await this.listConversations();
+    const filtered = all.filter((c) => c.id !== id);
+    await fs.writeFile(CONV_FILE, JSON.stringify(filtered, null, 2), "utf8");
+  }
+
+  async createConversation(model: string, title = "Nouvelle conversation"): Promise<Conversation> {
+    const conv: Conversation = {
+      id: uid("conv"),
+      title,
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      model,
+    };
+    await this.saveConversation(conv);
+    return conv;
+  }
+
+  async loadSettings(): Promise<Settings> {
+    await ensureDir();
+    try {
+      const raw = await fs.readFile(SETTINGS_FILE, "utf8");
+      return { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<Settings>) };
+    } catch {
+      return { ...DEFAULT_SETTINGS };
+    }
+  }
+
+  async saveSettings(settings: Settings): Promise<void> {
+    await ensureDir();
+    await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2), "utf8");
+  }
+}
+
+export const memory = new Memory();
