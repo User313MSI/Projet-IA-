@@ -14,6 +14,15 @@ import Sidebar from "../components/Sidebar";
 import SettingsPanel from "../components/SettingsPanel";
 import ThemeApplier from "../components/ThemeApplier";
 
+const QUICK_PROMPTS = [
+  "Bonjour, qui es-tu ?",
+  "Quelles sont mes infos système ?",
+  "Météo à Paris",
+  "Recherche le site officiel de Next.js",
+  "Calcule 15% de 245",
+  "Liste les fichiers du dossier courant",
+];
+
 export default function Page() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -26,6 +35,9 @@ export default function Page() {
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [reachable, setReachable] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [promptHistory, setPromptHistory] = useState<string[]>([]);
+  const [tokSpeed, setTokSpeed] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const loadConversations = useCallback(async () => {
@@ -44,6 +56,10 @@ export default function Page() {
   useEffect(() => {
     loadConversations();
     loadSettings();
+    try {
+      const h = localStorage.getItem("promptHistory");
+      if (h) setPromptHistory(JSON.parse(h));
+    } catch {}
   }, [loadConversations, loadSettings]);
 
   const selectConversation = useCallback(async (id: string) => {
@@ -70,8 +86,6 @@ export default function Page() {
     },
     [activeId, loadConversations]
   );
-
-  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const copyMessage = useCallback((id: string) => {
     const msg = messages.find((m) => m.id === id);
@@ -131,6 +145,18 @@ export default function Page() {
     setInput("");
     setStreaming(true);
     setActiveTools({});
+    setTokSpeed(0);
+
+    setPromptHistory((h) => {
+      const next = [text, ...h.filter((p) => p !== text)].slice(0, 20);
+      try {
+        localStorage.setItem("promptHistory", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+
+    const startTime = Date.now();
+    let tokenCount = 0;
 
     const assistantId = uid("msg");
     setMessages((m) => [
@@ -180,6 +206,9 @@ export default function Page() {
             setActiveId(createdConvId);
           }
           if (event.type === "token" && event.token) {
+            tokenCount++;
+            const elapsed = (Date.now() - startTime) / 1000;
+            if (elapsed > 0.5) setTokSpeed(Math.round(tokenCount / elapsed));
             setMessages((m) =>
               m.map((msg) =>
                 msg.id === assistantId
@@ -257,6 +286,7 @@ export default function Page() {
       setStreaming(false);
       setActiveTools({});
       loadConversations();
+      setTokSpeed(0);
     }
   }, [input, streaming, activeId, loadConversations]);
 
@@ -265,6 +295,38 @@ export default function Page() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+ e.preventDefault();
+        setShowSettings((s) => !s);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  useEffect(() => {
+    if (!streaming && messages.length > 0) {
+      const last = messages[messages.length - 1];
+      if (last && last.role === "assistant" && last.content && "Notification" in window) {
+        try {
+          if (Notification.permission === "granted") {
+            new Notification("NEXUS a répondu", {
+              body: last.content.slice(0, 100),
+            });
+          }
+        } catch {}
+      }
+    }
+  }, [streaming, messages]);
+
+  useEffect(() => {
+    if (typeof Notification !== "undefined" && Notification.permission === "default") {
+      try { Notification.requestPermission(); } catch {}
+    }
+  }, []);
 
   return (
     <div
@@ -277,6 +339,7 @@ export default function Page() {
       className="grid-bg"
     >
       <ThemeApplier theme={settings?.theme ?? "nexus"} fontSize={settings?.fontSize ?? 15} />
+
       <Sidebar
         conversations={conversations}
         activeId={activeId}
@@ -300,6 +363,10 @@ export default function Page() {
         streaming={streaming}
         activeTools={activeTools}
         scrollRef={scrollRef}
+        tokSpeed={tokSpeed}
+        quickPrompts={messages.length === 0 ? QUICK_PROMPTS : []}
+        promptHistory={promptHistory}
+        model={settings?.model ?? "qwen2.5:14b"}
       />
 
       {showSettings && settings && (
