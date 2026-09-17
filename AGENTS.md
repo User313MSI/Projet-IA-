@@ -28,8 +28,10 @@ pnpm typecheck        # Vérification des types
 
 1. Lire `REGLES.md` — les règles obligatoires
 2. Lire `JOURNAL.md` — l'historique des interventions
-3. Choisir un nom d'agent et se déclarer dans le journal
-4. Vérifier `git status` et la branche courante
+3. Choisir un prénom d'agent
+4. Faire un commit d'enregistrement : `chore(agent): <Prénom> — <tâche>`
+5. Se déclarer dans `JOURNAL.md` avec son prénom
+6. Vérifier `git status` et la branche courante
 
 ## Points critiques
 
