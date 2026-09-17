@@ -1,0 +1,15 @@
+target/
+dist/
+build/
+.next/
+.turbo/
+node_modules/
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+out/
+coverage/
+.vite/
+tsconfig.tsbuildinfo
