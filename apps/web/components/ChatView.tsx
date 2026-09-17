@@ -15,6 +15,10 @@ interface Props {
   streaming: boolean;
   activeTools: Record<string, { call: ToolCall; result?: ToolResult; running: boolean }>;
   scrollRef: RefObject<HTMLDivElement | null>;
+  tokSpeed: number;
+  quickPrompts: string[];
+  promptHistory: string[];
+  model: string;
 }
 
 function MessageBubble({
@@ -183,17 +187,29 @@ export default function ChatView({
   streaming,
   activeTools,
   scrollRef,
+  tokSpeed,
+  quickPrompts,
+  promptHistory,
+  model,
 }: Props) {
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onSend();
     }
+    if (e.key === "ArrowUp" && input === "") {
+      e.preventDefault();
+      setShowHistory(true);
+    }
   };
 
   const toolList = Object.values(activeTools);
+  const filteredHistory = promptHistory.filter(
+    (p) => !input || p.toLowerCase().startsWith(input.toLowerCase())
+  );
 
   return (
     <main
@@ -205,6 +221,35 @@ export default function ChatView({
         position: "relative",
       }}
     >
+      <div
+        style={{
+          padding: "8px 24px",
+          borderBottom: "1px solid var(--border)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <div style={{ fontSize: "11px", color: "var(--text-mute)", fontFamily: "var(--mono)" }}>
+          ◈ {model}
+        </div>
+        {streaming && tokSpeed > 0 && (
+          <div
+            style={{
+              fontSize: "11px",
+              color: "var(--accent)",
+              fontFamily: "var(--mono)",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--accent)", animation: "blink 1s infinite" }} />
+            {tokSpeed} tok/s
+          </div>
+        )}
+      </div>
+
       <div
         ref={scrollRef}
         style={{
@@ -224,7 +269,7 @@ export default function ChatView({
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              gap: "16px",
+              gap: "24px",
               color: "var(--text-mute)",
             }}
           >
@@ -239,9 +284,28 @@ export default function ChatView({
             >
               ◈ NEXUS
             </div>
-            <div style={{ fontSize: "14px" }}>
-              Votre IA locale est prête. Posez une question pour commencer.
-            </div>
+            <div style={{ fontSize: "14px" }}>Votre IA locale est prête. Posez une question pour commencer.</div>
+            {quickPrompts.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", justifyContent: "center", maxWidth: "600px" }}>
+                {quickPrompts.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setInput(p)}
+                    style={{
+                      padding: "8px 14px",
+                      borderRadius: "20px",
+                      background: "var(--bg-2)",
+                      border: "1px solid var(--border)",
+                      color: "var(--text-dim)",
+                      fontSize: "12px",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -295,8 +359,55 @@ export default function ChatView({
           maxWidth: "920px",
           width: "100%",
           margin: "0 auto",
+          position: "relative",
         }}
       >
+        {showHistory && filteredHistory.length > 0 && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "100%",
+              left: "32px",
+              right: "32px",
+              background: "var(--bg-2)",
+              border: "1px solid var(--border-strong)",
+              borderRadius: "12px",
+              padding: "8px",
+              marginBottom: "4px",
+              maxHeight: "200px",
+              overflowY: "auto",
+            }}
+          >
+            <div style={{ fontSize: "10px", color: "var(--text-mute)", padding: "4px 8px", marginBottom: "4px" }}>
+              HISTORIQUE (↑ pour naviguer)
+            </div>
+            {filteredHistory.map((p, i) => (
+              <div
+                key={i}
+                onClick={() => {
+                  setInput(p);
+                  setShowHistory(false);
+                }}
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  color: "var(--text-dim)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "var(--bg-3)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
+                {p}
+              </div>
+            ))}
+          </div>
+        )}
+
         <div
           style={{
             display: "flex",
@@ -314,7 +425,7 @@ export default function ChatView({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Envoyez un message… (Entrée pour envoyer, Maj+Entrée pour saut de ligne)"
+            placeholder="Envoyez un message… (Entrée pour envoyer, Maj+Entrée pour saut de ligne, ↑ pour l'historique)"
             rows={1}
             style={{
               flex: 1,
@@ -323,10 +434,11 @@ export default function ChatView({
               outline: "none",
               resize: "none",
               padding: "10px 12px",
-              fontSize: "15px",
+              fontSize: "1em",
               fontFamily: "var(--sans)",
               minHeight: "44px",
               maxHeight: "160px",
+              color: "var(--text)",
             }}
           />
           <button
