@@ -1,35 +1,9 @@
 import type { ToolDefinition, ToolCall, ToolResult } from "@ia-app/shared";
 import { uid } from "@ia-app/shared";
-import {
-  makePathPolicy,
-  makeCommandPolicy,
-  type PathPolicy,
-  type CommandPolicy,
-} from "./security";
 
 export interface ToolContext {
   cwd: string;
   log: (msg: string) => void;
-  /** Politique de confinement des chemins (lecture/écriture/listage). */
-  pathPolicy: PathPolicy;
-  /** Politique d'exécution des commandes shell. */
-  commandPolicy: CommandPolicy;
-  /**
-   * Demande l'approbation de l'utilisateur pour une action sensible.
-   * Retourne true si l'utilisateur accepte. Par défaut (aucun handler),
-   * refuse toute action sensible — défense en profondeur.
-   */
-  approve?: (call: ToolCall) => Promise<boolean>;
-}
-
-export function makeContext(cwd: string): ToolContext {
-  return {
-    cwd,
-    log: () => {},
-    pathPolicy: makePathPolicy(cwd),
-    commandPolicy: makeCommandPolicy(false),
-    approve: () => Promise.resolve(false),
-  };
 }
 
 export interface Tool {
