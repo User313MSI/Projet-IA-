@@ -62,3 +62,31 @@
 - `.github/workflows/ci.yml` reste non poussable via PAT fins (restriction GitHub)
 
 ---
+
+---
+
+## Pont — 2026-09-17 — Approbation UI
+
+**Rôle :** Câblage du mécanisme d'approbation UI pour les actions sensibles
+**Commit d'enregistrement :** `chore(agent): Pont — approbation UI`
+
+### Travail effectué
+- Mise en place de l'agent « Pont » dans EQUIPE.md et JOURNAL.md
+- Câblage des modules de sécurité d'Aegis dans le moteur (makeContext, approve, pathPolicy, commandPolicy)
+- Mécanisme d'approbation asynchrone via stream SSE (événement `approval_required`)
+- Route POST /api/approve (résolution des promesses en attente, guard token + rate limit)
+- Composant ApprovalCard dans l'UI (Accepter / Refuser)
+- Toggle « Mode power user » dans les réglages
+- Tests Vitest pour le mécanisme d'approbation
+
+### Fichiers modifiés
+- `packages/shared/src/index.ts` — type `approval_required` + champs, `powerUser` dans Settings
+- `packages/agent-core/src/tools.ts` — ToolContext durci (pathPolicy, commandPolicy, approve), makeContext
+- `packages/agent-core/src/default-tools.ts` — confinement chemins + allowlist commandes + approve + safeEvalMath
+- `packages/agent-core/src/agent.ts` — émission approval_required + handler approve
+- `packages/agent-core/src/ollama.ts` — validation URL loopback
+- `apps/web/app/api/chat/route.ts` — handler approve + Map promesses + guard
+- `apps/web/app/api/approve/route.ts` — NOUVEAU
+- `apps/web/components/ChatView.tsx` — ApprovalCard
+- `apps/web/components/SettingsPanel.tsx` — toggle power user
+- `EQUIPE.md`, `JOURNAL.md`, `SECURITE.md`
