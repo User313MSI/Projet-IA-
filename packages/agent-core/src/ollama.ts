@@ -12,6 +12,8 @@ export interface OllamaChatRequest {
   temperature?: number;
   top_p?: number;
   num_predict?: number;
+  num_ctx?: number;
+  num_thread?: number;
   tools?: unknown[];
 }
 
