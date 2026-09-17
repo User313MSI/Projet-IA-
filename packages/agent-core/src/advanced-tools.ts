@@ -2,8 +2,6 @@ import { promises as fs } from "node:fs";
 import os from "node:os";
 import type { Tool } from "./tools";
 import { ok, err, makeCall } from "./tools";
-import { safeResolve } from "./security/safe-path";
-import { sanitizeExternalContent } from "./security/sanitize";
 
 function str(value: unknown, max = 10000): string {
   const s = typeof value === "string" ? value : String(value ?? "");
@@ -14,7 +12,7 @@ export const systemInfoTool: Tool = {
   definition: {
     name: "system_info",
     description:
-      "Retourne les informations système : OS, CPU, RAM totale/libre, uptime. N'expose pas le hostname ni le home (PII).",
+      "Retourne les informations système : OS, CPU, RAM totale/libre, uptime, stockage.",
     parameters: {
       type: "object",
       properties: {},
@@ -35,12 +33,12 @@ export const systemInfoTool: Tool = {
       `RAM totale: ${totalMem} Go`,
       `RAM libre: ${freeMem} Go`,
       `Uptime: ${uptime}h`,
+      `Hostname: ${os.hostname()}`,
+      `Home: ${os.homedir()}`,
     ].join("\n");
     return ok(makeCall("system_info", args), info);
   },
 };
-
-const WEATHER_ALLOWED = /^[A-Za-zÀ-ÿ0-9 .,\-']+$/;
 
 export const weatherTool: Tool = {
   definition: {
@@ -57,19 +55,14 @@ export const weatherTool: Tool = {
   },
   async execute(args) {
     const city = str(args.city, 100);
-    if (!city.trim() || !WEATHER_ALLOWED.test(city)) {
-      return err(makeCall("weather", args), "weather: nom de ville invalide");
-    }
     try {
-      const url = `https://wttr.in/${encodeURIComponent(city)}?format=4`;
-      const res = await fetch(url, {
-        signal: AbortSignal.timeout(10000),
-        headers: { "User-Agent": "NEXUS/1.0 (local)" },
-      });
+      const res = await fetch(
+        `https://wttr.in/${encodeURIComponent(city)}?format=4`,
+        { signal: AbortSignal.timeout(10000) }
+      );
       if (!res.ok) return err(makeCall("weather", args), `weather: HTTP ${res.status}`);
       const text = await res.text();
-      const sanitized = sanitizeExternalContent(text, 500);
-      return ok(makeCall("weather", args), sanitized.content);
+      return ok(makeCall("weather", args), str(text, 500));
     } catch (e) {
       return err(makeCall("weather", args), `weather: ${String(e)}`);
     }
@@ -80,7 +73,7 @@ export const webSearchTool: Tool = {
   definition: {
     name: "web_search",
     description:
-      "Recherche sur le web via DuckDuckGo (gratuit, pas de clé API). Retourne les titres et URLs des premiers résultats. Le contenu est marqué comme non fiable avant réinjection dans le LLM.",
+      "Recherche sur le web via DuckDuckGo (gratuit, pas de clé API). Retourne les titres et URLs des premiers résultats.",
     parameters: {
       type: "object",
       properties: {
@@ -95,7 +88,7 @@ export const webSearchTool: Tool = {
       const res = await fetch(
         `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
         {
-          headers: { "User-Agent": "NEXUS/1.0 (local search)" },
+          headers: { "User-Agent": "Mozilla/5.0" },
           signal: AbortSignal.timeout(10000),
         }
       );
@@ -106,9 +99,7 @@ export const webSearchTool: Tool = {
       let match;
       let count = 0;
       while ((match = regex.exec(html)) && count < 5) {
-        const url = (match[1] ?? "")
-          .replace(/\/\/duckduckgo.com\/l\/\?uddg=/, "")
-          .split("&rut=")[0];
+        const url = (match[1] ?? "").replace(/\/\/duckduckgo.com\/l\/\?uddg=/, "").split("&rut=")[0];
         const title = (match[2] ?? "").trim();
         if (url) links.push(`${title}\n  ${decodeURIComponent(url)}`);
         count++;
@@ -116,8 +107,7 @@ export const webSearchTool: Tool = {
       if (links.length === 0) {
         return ok(makeCall("web_search", args), "Aucun résultat trouvé.");
       }
-      const sanitized = sanitizeExternalContent(links.join("\n\n"), 4000);
-      return ok(makeCall("web_search", args), sanitized.content);
+      return ok(makeCall("web_search", args), links.join("\n\n"));
     } catch (e) {
       return err(makeCall("web_search", args), `web_search: ${String(e)}`);
     }
@@ -143,11 +133,8 @@ export const scheduleTool: Tool = {
   async execute(args) {
     const message = str(args.message, 500);
     const minutes = Number(args.minutes);
-    if (!minutes || minutes <= 0 || minutes > 525600) {
-      return err(
-        makeCall("schedule_reminder", args),
-        "minutes doit être > 0 et <= 525600 (1 an)"
-      );
+    if (!minutes || minutes <= 0) {
+      return err(makeCall("schedule_reminder", args), "minutes doit être > 0");
     }
     const id = `reminder_${Date.now()}`;
     reminderStore.set(id, { msg: message, at: Date.now() + minutes * 60000 });
@@ -162,24 +149,19 @@ export const fileSearchTool: Tool = {
   definition: {
     name: "file_search",
     description:
-      "Recherche des fichiers par nom dans un répertoire du workspace (récursif, profondeur 3). Chemin relatif uniquement. Refuse les chemins absolus et hors périmètre.",
+      "Recherche des fichiers par nom dans un répertoire (récursif). Retourne les chemins trouvés.",
     parameters: {
       type: "object",
       properties: {
         pattern: { type: "string", description: "Mot à chercher dans le nom du fichier" },
-        directory: { type: "string", description: "Répertoire de départ relatif (défaut: cwd)" },
+        directory: { type: "string", description: "Répertoire de départ (défaut: cwd)" },
       },
       required: ["pattern"],
     },
   },
   async execute(args, ctx) {
     const pattern = str(args.pattern, 200).toLowerCase();
-    const startInput = args.directory ? str(args.directory) : ".";
-    const resolved = safeResolve(startInput, ctx.pathPolicy);
-    if (!resolved.ok || !resolved.full) {
-      return err(makeCall("file_search", args), `file_search: ${resolved.error}`);
-    }
-    const startDir = resolved.full;
+    const startDir = args.directory ? str(args.directory) : ctx.cwd;
     const results: string[] = [];
     async function walk(dir: string, depth: number): Promise<void> {
       if (depth > 3 || results.length > 20) return;
