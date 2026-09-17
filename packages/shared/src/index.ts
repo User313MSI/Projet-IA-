@@ -52,6 +52,8 @@ export interface ModelInfo {
   quantization?: string;
 }
 
+export type Theme = "nexus" | "ocean" | "sunset" | "forest";
+
 export interface Settings {
   model: string;
   temperature: number;
@@ -59,6 +61,8 @@ export interface Settings {
   maxTokens: number;
   systemPrompt: string;
   ollamaUrl: string;
+  theme: Theme;
+  fontSize: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -69,6 +73,8 @@ export const DEFAULT_SETTINGS: Settings = {
   systemPrompt:
     "Tu es NEXUS, un assistant IA local autonome. Tu réponds en français, de manière claire, directe et concise. Tu réfléchis étape par étape uniquement quand c'est nécessaire. Tu utilises les outils disponibles quand ils t'aident à répondre. Sois rapide et utile.",
   ollamaUrl: "http://127.0.0.1:11434",
+  theme: "nexus",
+  fontSize: 15,
 };
 
 export interface AgentStreamEvent {
