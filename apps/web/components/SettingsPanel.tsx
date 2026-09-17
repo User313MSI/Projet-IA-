@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Settings } from "@ia-app/shared";
+import type { Settings, Theme } from "@ia-app/shared";
 
 interface Props {
   settings: Settings;
@@ -238,6 +238,51 @@ export default function SettingsPanel({
               />
             </Field>
           </div>
+
+          <Field label="Thème">
+            <div style={{ display: "flex", gap: "8px" }}>
+              {([
+                { id: "nexus", label: "Nexus", color: "linear-gradient(135deg, #00e5ff, #7c4dff)" },
+                { id: "ocean", label: "Océan", color: "linear-gradient(135deg, #00b4ff, #0066ff)" },
+                { id: "sunset", label: "Sunset", color: "linear-gradient(135deg, #ff7828, #ff3860)" },
+                { id: "forest", label: "Forêt", color: "linear-gradient(135deg, #00ff82, #20a060)" },
+              ] as { id: Theme; label: string; color: string }[]).map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setLocal({ ...local, theme: t.id })}
+                  style={{
+                    flex: 1,
+                    padding: "10px 4px",
+                    borderRadius: "10px",
+                    border: local.theme === t.id ? "2px solid var(--accent)" : "1px solid var(--border)",
+                    background: "var(--bg-1)",
+                    color: local.theme === t.id ? "var(--text)" : "var(--text-dim)",
+                    fontSize: "11px",
+                    fontWeight: local.theme === t.id ? 600 : 400,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <div style={{ width: "20px", height: "20px", borderRadius: "6px", background: t.color }} />
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </Field>
+
+          <Field label={`Taille de police: ${local.fontSize}px`}>
+            <input
+              type="range"
+              min="12"
+              max="20"
+              step="1"
+              value={local.fontSize}
+              onChange={(e) => setLocal({ ...local, fontSize: Number(e.target.value) })}
+              style={{ width: "100%", accentColor: "var(--accent)" }}
+            />
+          </Field>
 
           <Field label="Prompt système">
             <textarea
