@@ -1,6 +1,5 @@
 export { Agent, type AgentOptions } from "./agent";
 export { OllamaClient } from "./ollama";
-export * as security from "./security";
 export {
   ToolRegistry,
   type Tool,
