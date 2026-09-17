@@ -103,6 +103,8 @@ export class Agent {
           temperature: settings.temperature,
           top_p: settings.topP,
           num_predict: settings.maxTokens,
+          num_ctx: 4096,
+          num_thread: 8,
           tools: toolDefs.length
             ? toolDefs.map((t) => ({
                 type: "function",
