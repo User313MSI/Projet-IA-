@@ -8,7 +8,6 @@
 | Prénom | Rôle | Date d'arrivée | Tâches effectuées | Statut |
 |--------|------|----------------|-------------------|--------|
 | Vibe | Créateur & architecte | 2026-09-17 | Création complète du projet NEXUS (moteur IA, web app, desktop, 30 nouveautés) | Actif |
-| Aegis | Sécurité | 2026-09-17 | Audit de sécurité complet + durcissement (confinement chemins, allowlist commandes, parseur calc, approbation, validation URL Ollama, API durcie, Electron durci, 49 tests) | Actif |
 
 ---
 
