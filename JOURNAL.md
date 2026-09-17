@@ -130,3 +130,14 @@ Audit de sécurité complet de NEXUS et implémentation de multiples couches de
 - Prompt injection avancée non éliminable (l'approbation humaine reste le filet).
 
 ---
+### Livraison GitHub
+- Push initial bloqué par la sandbox (403 git push + appels API mutatifs interdits).
+- L'utilisateur a installé l'**GitHub App Mistral** sur le dépôt (`User313MSI/Projet-IA-`).
+- Après installation, le token dispose des droits d'écriture (`permissions.push: true`),
+  et `git push origin main` a réussi (commits `b62bbab` + `982c68b` poussés).
+- **À partir de maintenant, les futures sessions d'agent peuvent pousser directement
+  via `git push origin <branche>`** (l'app reste installée sur le dépôt).
+  Workflow de livraison désormais : travailler sur une branche `vibe/<slug>` ou
+  `main`, puis `git push`.
+
+---
