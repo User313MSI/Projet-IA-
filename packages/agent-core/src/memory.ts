@@ -41,6 +41,14 @@ export class Memory {
     await fs.writeFile(CONV_FILE, JSON.stringify(all, null, 2), "utf8");
   }
 
+  async renameConversation(id: string, title: string): Promise<void> {
+    const conv = await this.getConversation(id);
+    if (conv) {
+      conv.title = title;
+      await this.saveConversation(conv);
+    }
+  }
+
   async deleteConversation(id: string): Promise<void> {
     const all = await this.listConversations();
     const filtered = all.filter((c) => c.id !== id);
