@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ToolRegistry, makeCall, makeContext } from "../src/tools.js";
+import { ToolRegistry, makeCall } from "../src/tools.js";
 import { createDefaultTools } from "../src/default-tools.js";
 import { DEFAULT_SETTINGS } from "@ia-app/shared";
 
@@ -25,7 +25,7 @@ describe("ToolRegistry", () => {
     for (const t of createDefaultTools()) reg.register(t);
     const result = await reg.execute(
       makeCall("calc", { expression: "2+2*3" }),
-      makeContext(process.cwd())
+      { cwd: process.cwd(), log: () => {} }
     );
     expect(result.ok).toBe(true);
     expect(result.output).toBe("8");
@@ -36,20 +36,16 @@ describe("ToolRegistry", () => {
     for (const t of createDefaultTools()) reg.register(t);
     const result = await reg.execute(
       makeCall("calc", { expression: "process.exit(1)" }),
-      makeContext(process.cwd())
+      { cwd: process.cwd(), log: () => {} }
     );
     expect(result.ok).toBe(false);
-    // Le parseur sécurisé rejette process comme fonction inconnue (pas d'exécution de code)
-    expect(result.error).toMatch(/fonction inconnue|caractère interdit|invalide/);
+    expect(result.error).toMatch(/non autorisée/);
   });
 
   it("écrit puis lit un fichier", async () => {
     const reg = new ToolRegistry();
     for (const t of createDefaultTools()) reg.register(t);
-    const ctx = {
-      ...makeContext(process.cwd()),
-      approve: () => Promise.resolve(true),
-    };
+    const ctx = { cwd: process.cwd(), log: () => {} };
     const target = `./__vitest_tmp_${Date.now()}.txt`;
     const w = await reg.execute(
       makeCall("write_file", { path: target, content: "hello" }),
@@ -65,7 +61,10 @@ describe("ToolRegistry", () => {
 
   it("gère un outil inconnu", async () => {
     const reg = new ToolRegistry();
-    const result = await reg.execute(makeCall("ghost", {}), makeContext(process.cwd()));
+    const result = await reg.execute(makeCall("ghost", {}), {
+      cwd: process.cwd(),
+      log: () => {},
+    });
     expect(result.ok).toBe(false);
     expect(result.error).toMatch(/Outil inconnu/);
   });
