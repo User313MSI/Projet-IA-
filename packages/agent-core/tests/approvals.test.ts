@@ -154,9 +154,10 @@ describe("Outils : approbation via handler", () => {
       ...makeContext(process.cwd(), { commandPolicy: makeCommandPolicy(true) }),
       approve: () => Promise.resolve(true),
     };
-    // `printf` n'est pas dans la liste blanche : approbation requise (power user).
+    // `node -e` n'est pas dans la liste blanche : approbation requise (power user).
+    // node -e est multiplateforme (fonctionne sur Windows et Linux).
     const r = await reg.execute(
-      makeCall("run_command", { command: "printf powerok" }),
+      makeCall("run_command", { command: "node -e \"process.stdout.write('powerok')\"" }),
       ctx
     );
     expect(r.ok).toBe(true);
