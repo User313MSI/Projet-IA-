@@ -41,3 +41,24 @@
 - Intégration vocale (plus tard)
 
 ---
+
+## Vibe — 2026-09-17 — Workflow d'équipe + prompt de sécurité
+**Rôle :** Mise en place du workflow d'équipe et préparation de l'audit de sécurité
+**Commit d'enregistrement :** `chore(agent): Vibe — workflow équipe + prompt sécurité`
+
+### Travail effectué
+- Création de `EQUIPE.md` : registre des agents (tableau Prénom/Rôle/Date/Tâches/Statut)
+- Création de `PROMPT_SECURITE.md` : prompt complet pour une nouvelle conversation dédiée à la sécurité du système
+- Le prompt de sécurité explique l'architecture de NEXUS, liste les fichiers à auditer (default-tools.ts, advanced-tools.ts, agent.ts, ollama.ts, memory.ts, route.ts, main.ts), et demande au nouvel agent de choisir un prénom, s'enregistrer dans EQUIPE.md et JOURNAL.md, puis maximiser la sécurité (allowlist commandes, confinement chemins, approbation utilisateur, durcissement Electron, restriction API à localhost, etc.)
+- Push sur GitHub des deux fichiers via `python3 scripts/push_contents.py`
+
+### Fichiers créés
+- `EQUIPE.md` — Registre des agents de l'équipe NEXUS
+- `PROMPT_SECURITE.md` — Prompt à copier dans une nouvelle conversation pour l'audit de sécurité
+
+### État
+- `EQUIPE.md` poussé sur GitHub ✅ (1021 bytes)
+- `PROMPT_SECURITE.md` poussé sur GitHub ✅ (11811 bytes)
+- `.github/workflows/ci.yml` reste non poussable via PAT fins (restriction GitHub)
+
+---
