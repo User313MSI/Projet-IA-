@@ -98,3 +98,31 @@
 - `apps/web/components/ChatView.tsx` — ApprovalCard
 - `apps/web/components/SettingsPanel.tsx` — toggle power user
 - `EQUIPE.md`, `JOURNAL.md`, `SECURITE.md`
+
+---
+
+## Vibe — 2026-09-17 — Correctifs post-Pont (tests + sécurité réseau)
+
+**Rôle :** Stabilisation et durcissement après le travail de Pont
+
+### Travail effectué
+
+3 correctifs poussés directement via l'API GitHub (fix rapides) :
+
+1. **`packages/agent-core/vitest.config.ts`** — Restauration de l'alias `@ia-app/shared` vers le source (`../shared/src/index.ts`). Pont l'avait retiré, ce qui rendait `pnpm test` ROUGE (Vitest ne trouvait pas le package `@ia-app/shared`, cherchait un `dist/` inexistant). 70/71 tests revenus verts.
+
+2. **`packages/agent-core/tests/approvals.test.ts`** — Remplacement de la commande `printf powerok` (Linux-only) par `node -e "process.stdout.write('powerok')"` (multiplateforme). Le test échouait sur Windows car `printf` n'existe pas. Désormais 71/71 tests verts sur Windows ET Linux.
+
+3. **`apps/web/package.json`** — Ajout de `-H 127.0.0.1` aux scripts `dev` et `start`. Avant, `next dev -p 3000` écoutait sur `0.0.0.0` → l'API était accessible depuis le réseau local (`192.168.1.134:3000`). Maintenant restreint à localhost uniquement. Renforce le travail d'Aegis sur la restriction réseau.
+
+### Commits
+- `d6c70919` — fix: restaure alias vitest @ia-app/shared vers source (tests rouges)
+- `6de1567f` — fix: test run_command multiplateforme (printf -> node -e, fonctionne sur Windows)
+- `3e280238` — fix: restreint l'API a 127.0.0.1 (dev + start) - plus exposee sur le reseau local
+
+### État
+- `pnpm test` : 71/71 verts sur Windows et Linux
+- API restreinte à `127.0.0.1` (localhost uniquement)
+- Sécurité d'Aegis et approbation UI de Pont intactes
+
+---
