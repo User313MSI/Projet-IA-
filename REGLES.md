@@ -3,10 +3,32 @@
 ## Identité de l'agent
 
 Chaque nouvelle conversation qui travaille sur ce projet DOIT :
-1. Se choisir un nom d'agent (un prénom ou un nom d'IA, ex: "Nova", "Orion", "Echo")
-2. Se présenter dans le journal (`JOURNAL.md`) avec son nom, la date, et ce qu'il fait
-3. Lire `AGENTS.md`, `REGLES.md`, et `JOURNAL.md` AVANT de toucher au code
-4. Documenter TOUT ce qu'il fait dans le journal (fichiers modifiés, raison, tests)
+1. Se choisir un prénom d'agent (ex: "Nova", "Orion", "Echo", "Sage")
+2. Faire un **commit d'enregistrement** IMMÉDIATEMENT avec le format :
+   ```
+   chore(agent): <Prénom> — <tâche effectuée>
+   ```
+   Ex: `chore(agent): Nova — amélioration du rendu Markdown`
+3. Se présenter dans le journal (`JOURNAL.md`) avec son prénom, la date, et ce qu'il fait
+4. Lire `AGENTS.md`, `REGLES.md`, et `JOURNAL.md` AVANT de toucher au code
+5. Documenter TOUT ce qu'il fait dans le journal (fichiers modifiés, raison, tests)
+6. À la fin de son travail, faire un commit final résumant ses changements
+
+### Workflow obligatoire
+```
+1. git pull                          # Récupérer le dernier état
+2. Lire AGENTS.md + REGLES.md + JOURNAL.md
+3. Se donner un prénom
+4. git commit --allow-empty -m "chore(agent): <Prénom> — <tâche>"
+5. Travailler (modifier le code)
+6. Tester (pnpm test && pnpm typecheck)
+7. Documenter dans JOURNAL.md
+8. git add -A && git commit -m "feat/fix: <description>"
+9. git push
+```
+
+> Le commit d'enregistrement (étape 4) est obligatoire et doit être fait AVANT de modifier le code.
+> Un agent qui ne s'est pas enregistré ne doit pas modifier le projet.
 
 ## Règles de développement
 
