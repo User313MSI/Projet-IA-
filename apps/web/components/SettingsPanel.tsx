@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Settings, Theme } from "@ia-app/shared";
+import { apiFetch } from "../lib/client";
 
 interface Props {
   settings: Settings;
@@ -28,13 +29,13 @@ export default function SettingsPanel({
   const [checked, setChecked] = useState(false);
 
   const checkConnection = async () => {
-    const res = await fetch("/api/settings", {
+    const res = await apiFetch("/api/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ollamaUrl: local.ollamaUrl }),
     });
     await res.json();
-    const res2 = await fetch("/api/settings");
+    const res2 = await apiFetch("/api/settings");
     const data = await res2.json();
     setModels(data.models ?? []);
     setChecked(true);
@@ -43,7 +44,7 @@ export default function SettingsPanel({
 
   const save = async () => {
     setSaving(true);
-    await fetch("/api/settings", {
+    await apiFetch("/api/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(local),

@@ -1,9 +1,10 @@
 target/
 dist/
 build/
+release/
 .next/
 .turbo/
-node_modules/
+node_modules
 .env
 .env.local
 .env.*.local

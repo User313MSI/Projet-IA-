@@ -2,24 +2,35 @@ import type { NextRequest } from "next/server";
 import { Agent, memory } from "@ia-app/agent-core";
 import type { ChatMessage, AgentStreamEvent } from "@ia-app/shared";
 import { uid } from "@ia-app/shared";
+import { guard, readJsonBody } from "../../../lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const MAX_MESSAGE = 32000;
+
 export async function POST(req: NextRequest) {
-  let body: { conversationId?: string; message: string };
-  try {
-    body = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: "JSON invalide" }), {
-      status: 400,
+  const auth = await guard(req);
+  if (auth) return auth;
+
+  const parsed = await readJsonBody(req);
+  if (!parsed.ok) {
+    return new Response(JSON.stringify({ error: parsed.error }), {
+      status: parsed.status,
       headers: { "Content-Type": "application/json" },
     });
   }
+  const body = parsed.body as { conversationId?: string; message?: string };
 
   if (!body.message?.trim()) {
     return new Response(JSON.stringify({ error: "Message vide" }), {
       status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  if (body.message.length > MAX_MESSAGE) {
+    return new Response(JSON.stringify({ error: "Message trop long" }), {
+      status: 413,
       headers: { "Content-Type": "application/json" },
     });
   }
@@ -31,14 +42,14 @@ export async function POST(req: NextRequest) {
   if (!conv) {
     conv = await memory.createConversation(
       settings.model,
-      body.message.slice(0, 50)
+      (body.message ?? "").slice(0, 50)
     );
   }
 
   const userMsg: ChatMessage = {
     id: uid("msg"),
     role: "user",
-    content: body.message,
+    content: body.message as string,
     createdAt: Date.now(),
   };
   conv.messages.push(userMsg);

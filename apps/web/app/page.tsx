@@ -9,6 +9,7 @@ import type {
   ToolResult,
 } from "@ia-app/shared";
 import { uid } from "@ia-app/shared";
+import { apiFetch } from "../lib/client";
 import ChatView from "../components/ChatView";
 import Sidebar from "../components/Sidebar";
 import SettingsPanel from "../components/SettingsPanel";
@@ -41,13 +42,13 @@ export default function Page() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const loadConversations = useCallback(async () => {
-    const res = await fetch("/api/conversations");
+    const res = await apiFetch("/api/conversations");
     const data = await res.json();
     setConversations(data);
   }, []);
 
   const loadSettings = useCallback(async () => {
-    const res = await fetch("/api/settings");
+    const res = await apiFetch("/api/settings");
     const data = await res.json();
     setSettings(data.settings);
     setReachable(data.reachable);
@@ -63,7 +64,7 @@ export default function Page() {
   }, [loadConversations, loadSettings]);
 
   const selectConversation = useCallback(async (id: string) => {
-    const res = await fetch(`/api/conversations/${id}`);
+    const res = await apiFetch(`/api/conversations/${id}`);
     const conv: Conversation = await res.json();
     setActiveId(id);
     setMessages(conv.messages);
@@ -77,7 +78,7 @@ export default function Page() {
 
   const deleteConversation = useCallback(
     async (id: string) => {
-      await fetch(`/api/conversations/${id}`, { method: "DELETE" });
+      await apiFetch(`/api/conversations/${id}`, { method: "DELETE" });
       if (id === activeId) {
         setActiveId(null);
         setMessages([]);
@@ -102,7 +103,7 @@ export default function Page() {
 
   const renameConversation = useCallback(
     async (id: string, title: string) => {
-      await fetch("/api/conversations", {
+      await apiFetch("/api/conversations", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, title }),
@@ -113,7 +114,7 @@ export default function Page() {
   );
 
   const exportConversation = useCallback(async (id: string) => {
-    const res = await fetch(`/api/conversations/${id}`);
+    const res = await apiFetch(`/api/conversations/${id}`);
     const conv: Conversation = await res.json();
     const lines: string[] = [`# ${conv.title}\n`];
     lines.push(`*Exporté le ${new Date().toLocaleString("fr-FR")}*\n`);
@@ -167,7 +168,7 @@ export default function Page() {
     let createdConvId: string | null = activeId;
 
     try {
-      const res = await fetch("/api/chat", {
+      const res = await apiFetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ conversationId: activeId, message: text }),

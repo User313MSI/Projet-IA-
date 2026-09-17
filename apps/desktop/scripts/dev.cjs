@@ -7,7 +7,7 @@ const webDir = path.join(root, "apps", "web");
 function startNextDev() {
   const next = spawn(
     process.platform === "win32" ? "npx.cmd" : "npx",
-    ["next", "dev", "-p", "3000"],
+    ["next", "dev", "-H", "127.0.0.1", "-p", "3000"],
     { cwd: webDir, stdio: "inherit", shell: true }
   );
   next.on("error", (err) => {

@@ -12,6 +12,21 @@ const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 
 async function ensureDir(): Promise<void> {
   await fs.mkdir(DATA_DIR, { recursive: true });
+  // Restreint les permissions du répertoire de données au propriétaire (0o700).
+  try {
+    await fs.chmod(DATA_DIR, 0o700);
+  } catch {
+    // best-effort, ignore sur systèmes non POSIX
+  }
+}
+
+async function writeRestricted(file: string, data: string): Promise<void> {
+  await fs.writeFile(file, data, "utf8");
+  try {
+    await fs.chmod(file, 0o600);
+  } catch {
+    // best-effort
+  }
 }
 
 export class Memory {
@@ -38,7 +53,7 @@ export class Memory {
     conv.updatedAt = Date.now();
     if (idx >= 0) all[idx] = conv;
     else all.push(conv);
-    await fs.writeFile(CONV_FILE, JSON.stringify(all, null, 2), "utf8");
+    await writeRestricted(CONV_FILE, JSON.stringify(all, null, 2));
   }
 
   async renameConversation(id: string, title: string): Promise<void> {
@@ -52,7 +67,7 @@ export class Memory {
   async deleteConversation(id: string): Promise<void> {
     const all = await this.listConversations();
     const filtered = all.filter((c) => c.id !== id);
-    await fs.writeFile(CONV_FILE, JSON.stringify(filtered, null, 2), "utf8");
+    await writeRestricted(CONV_FILE, JSON.stringify(filtered, null, 2));
   }
 
   async createConversation(model: string, title = "Nouvelle conversation"): Promise<Conversation> {
@@ -80,7 +95,7 @@ export class Memory {
 
   async saveSettings(settings: Settings): Promise<void> {
     await ensureDir();
-    await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2), "utf8");
+    await writeRestricted(SETTINGS_FILE, JSON.stringify(settings, null, 2));
   }
 }
 

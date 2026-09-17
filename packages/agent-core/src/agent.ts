@@ -13,6 +13,14 @@ import {
 } from "./tools";
 import { createDefaultTools } from "./default-tools";
 import { createAdvancedTools } from "./advanced-tools";
+import {
+  makePathPolicy,
+  makeCommandPolicy,
+  sanitizeExternalContent,
+} from "./security";
+
+/** Outils dont le résultat est du contenu externe (à assainir avant réinjection). */
+const EXTERNAL_TOOLS = new Set(["web_search", "weather"]);
 
 export interface AgentOptions {
   settings: Settings;
@@ -20,6 +28,10 @@ export interface AgentOptions {
   cwd?: string;
   maxSteps?: number;
   onEvent?: (event: AgentStreamEvent) => void;
+  /** Active le mode power user (commandes hors liste blanche autorisées avec confirmation). */
+  powerUser?: boolean;
+  /** Handler d'approbation utilisateur pour les actions sensibles. */
+  approve?: (call: ToolCall) => Promise<boolean>;
 }
 
 function buildOllamaMessages(
@@ -65,9 +77,13 @@ export class Agent {
       for (const t of createDefaultTools()) this.tools.register(t);
       for (const t of createAdvancedTools()) this.tools.register(t);
     }
+    const cwd = opts.cwd ?? process.cwd();
     this.ctx = {
-      cwd: opts.cwd ?? process.cwd(),
+      cwd,
       log: () => {},
+      pathPolicy: makePathPolicy(cwd),
+      commandPolicy: makeCommandPolicy(opts.powerUser ?? false),
+      approve: opts.approve,
     };
     this.maxSteps = opts.maxSteps ?? 8;
   }
@@ -178,7 +194,18 @@ export class Agent {
         };
         yield emit({ type: "tool_call", toolCall: call });
 
-        const result: ToolResult = await this.tools.execute(call, this.ctx);
+        let result: ToolResult = await this.tools.execute(call, this.ctx);
+        // Assainit le contenu externe avant réinjection dans le contexte du LLM.
+        if (result.ok && result.output && EXTERNAL_TOOLS.has(call.name)) {
+          const sanitized = sanitizeExternalContent(result.output, 4000);
+          result = { ...result, output: sanitized.content };
+          if (sanitized.injectionSuspected) {
+            yield emit({
+              type: "error",
+              message: `Contenu externe suspect (injection potentielle détectée) dans le résultat de ${call.name}.`,
+            });
+          }
+        }
         yield emit({ type: "tool_result", toolResult: result });
 
         workingHistory.push({

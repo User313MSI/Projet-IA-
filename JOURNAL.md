@@ -62,3 +62,71 @@
 - `.github/workflows/ci.yml` reste non poussable via PAT fins (restriction GitHub)
 
 ---
+
+## Aegis — 2026-09-17 — Rôle Sécurité — Audit & durcissement complet
+**Commit d'enregistrement :** `chore(agent): Aegis — audit de sécurité`
+
+### Travail effectué
+Audit de sécurité complet de NEXUS et implémentation de multiples couches de
+ défense en profondeur. Création d'un module de sécurité dédié
+ `packages/agent-core/src/security/` et durcissement de toute la surface
+ d'attaque.
+
+**Modèle de menaces** (voir `SECURITE.md`) : 12 vecteurs identifiés (V1–V12),
+ 5 scénarios d'attaque (A1–A6).
+
+### Fichiers créés
+- `packages/agent-core/src/security/safe-path.ts` — confinement des chemins
+  (refus absolus/`../`, liste noire `.ssh`/`.aws`/`.env`/`.git`…)
+- `packages/agent-core/src/security/safe-command.ts` — allowlist de commandes +
+  liste noire destructrice (`rm -rf`, `curl`, `mkfs`, `shutdown`…), refus des
+  opérateurs shell hors power user
+- `packages/agent-core/src/security/safe-url.ts` — validation URL Ollama
+  loopback uniquement (anti-SSRF)
+- `packages/agent-core/src/security/sanitize.ts` — marquage contenu externe
+  non fiable + détection prompt injection
+- `packages/agent-core/src/security/math-eval.ts` — parseur arithmétique
+  récursif (remplace `Function()`)
+- `packages/agent-core/src/security/policies.ts`, `index.ts`
+- `packages/agent-core/tests/security.test.ts` — 43 tests de sécurité
+- `apps/web/lib/auth.ts` — token local partagé + rate limit + lecture body bornée
+- `apps/web/lib/client.ts` — helper client `apiFetch` (header token)
+- `apps/web/app/api/auth/route.ts` — distribution du token (Same-Origin)
+- `apps/desktop/src/preload.ts` — bridge Electron minimal
+- `SECURITE.md` — modèle de menaces, mesures, reste à faire, recommandations
+
+### Fichiers modifiés
+- `packages/agent-core/src/tools.ts` — `ToolContext` étendu
+  (pathPolicy, commandPolicy, approve) + `makeContext`
+- `packages/agent-core/src/default-tools.ts` — confinement chemins +
+  allowlist commandes + approbation write_file + parseur calc
+- `packages/agent-core/src/advanced-tools.ts` — confinement file_search +
+  assainissement web_search/weather + validation ville + system_info sans PII
+- `packages/agent-core/src/agent.ts` — contexte sécurisé + assainissement
+  résultats externes + approbation + détection injection
+- `packages/agent-core/src/ollama.ts` — validation URL à la construction/setBaseUrl
+- `packages/agent-core/src/memory.ts` — permissions 0o700/0o600
+- `packages/agent-core/src/index.ts` — export `security`
+- `packages/agent-core/vitest.config.ts` — alias `@ia-app/shared` vers source
+- `packages/agent-core/tests/tools.test.ts` — adapté au nouveau modèle
+- `apps/web/app/api/chat/route.ts` — guard + taille message + body borné
+- `apps/web/app/api/settings/route.ts` — guard + validation ollamaUrl + bornage
+- `apps/web/app/api/conversations/route.ts` + `[id]/route.ts` — guard
+- `apps/web/app/page.tsx` + `components/SettingsPanel.tsx` — `apiFetch` (token)
+- `apps/desktop/src/main.ts` — sandbox + CSP + preload + navigation contrôlée
+- `apps/desktop/scripts/dev.cjs` — `next dev -H 127.0.0.1`
+- `apps/web/package.json` — `dev`/`start` sur `127.0.0.1`
+- `EQUIPE.md` — ligne Aegis ajoutée
+
+### État
+- Tests ✅ (49/49 : 6 tools + 43 sécurité)
+- Typecheck ✅ (4 packages)
+- Build ✅ (`pnpm -r build`)
+
+### Surface résiduelle connue
+- Approbation UI non câblée dans le stream SSE (par défaut, les actions
+  sensibles sont refusées — sûr mais bloque l'agent power user). Voir
+  `SECURITE.md` §4.
+- Prompt injection avancée non éliminable (l'approbation humaine reste le filet).
+
+---
