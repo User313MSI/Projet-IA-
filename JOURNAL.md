@@ -141,3 +141,22 @@ Audit de sécurité complet de NEXUS et implémentation de multiples couches de
   `main`, puis `git push`.
 
 ---
+### Déploiement local — À FAIRE (par le créateur Vibe)
+- **Le durcissement n'a PAS encore été déployé/testé sur le PC de l'utilisateur.**
+  Les correctifs sont poussés sur GitHub (`main`) mais l'utilisateur n'a pas encore
+  cloné ni `git pull` le dépôt localement sur sa machine.
+- ⚠️ **Action attendue du créateur (Vibe)** : donner à l'utilisateur les commandes
+  exactes de déploiement sur son PC (clone du dépôt + `pnpm install` + relance de
+  NEXUS), et valider que les protections sont actives en local.
+- Commandes prévues (à confirmer par le créateur selon la structure du PC) :
+  ```
+  git clone https://github.com/User313MSI/Projet-IA-.git
+  cd Projet-IA-
+  pnpm install
+  pnpm test          # vérifier 49 tests verts
+  pnpm dev           # ou pnpm dev:desktop
+  ```
+- Tant que ce n'est pas fait, l'ancienne version (non durcie) reste celle qui tourne
+  sur le PC. La sécurité n'est réellement active qu'après déploiement local.
+
+---
