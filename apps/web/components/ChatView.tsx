@@ -1,20 +1,32 @@
 "use client";
 
-import { useRef, type RefObject } from "react";
+import { useRef, useState, type RefObject } from "react";
 import type { ChatMessage, ToolCall, ToolResult } from "@ia-app/shared";
+import Markdown from "./Markdown";
 
 interface Props {
   messages: ChatMessage[];
   input: string;
   setInput: (v: string) => void;
   onSend: () => void;
+  onCopy: (id: string) => void;
+  onDelete: (id: string) => void;
   streaming: boolean;
   activeTools: Record<string, { call: ToolCall; result?: ToolResult; running: boolean }>;
   scrollRef: RefObject<HTMLDivElement | null>;
 }
 
-function MessageBubble({ msg }: { msg: ChatMessage }) {
+function MessageBubble({
+  msg,
+  onCopy,
+  onDelete,
+}: {
+  msg: ChatMessage;
+  onCopy: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
   const isUser = msg.role === "user";
+  const [hovered, setHovered] = useState(false);
   return (
     <div
       style={{
@@ -22,6 +34,8 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
         justifyContent: isUser ? "flex-end" : "flex-start",
         marginBottom: "16px",
       }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <div
         style={{
@@ -39,25 +53,64 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
       >
         <div
           style={{
-            fontSize: "10px",
-            color: "var(--text-mute)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
             marginBottom: "4px",
-            letterSpacing: "1px",
-            textTransform: "uppercase",
           }}
         >
-          {isUser ? "Vous" : "IA"}
-          {msg.model ? ` · ${msg.model}` : ""}
+          <div
+            style={{
+              fontSize: "10px",
+              color: "var(--text-mute)",
+              letterSpacing: "1px",
+              textTransform: "uppercase",
+            }}
+          >
+            {isUser ? "Vous" : "NEXUS"}
+            {msg.model ? ` · ${msg.model}` : ""}
+          </div>
+          {hovered && (
+            <div style={{ display: "flex", gap: "4px" }}>
+              <button
+                onClick={() => onCopy(msg.id)}
+                style={{
+                  fontSize: "11px",
+                  color: "var(--text-mute)",
+                  padding: "2px 6px",
+                  borderRadius: "4px",
+                  background: "var(--bg-3)",
+                }}
+                title="Copier"
+              >
+                ⧉
+              </button>
+              <button
+                onClick={() => onDelete(msg.id)}
+                style={{
+                  fontSize: "11px",
+                  color: "var(--text-mute)",
+                  padding: "2px 6px",
+                  borderRadius: "4px",
+                  background: "var(--bg-3)",
+                }}
+                title="Supprimer"
+              >
+                ✕
+              </button>
+            </div>
+          )}
         </div>
         <div
-          style={{
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-            lineHeight: 1.7,
-          }}
           className={!isUser && msg.content === "" ? "cursor-blink" : ""}
         >
-          {msg.content || (!isUser ? "" : "")}
+          {isUser ? (
+            <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.7 }}>
+              {msg.content}
+            </div>
+          ) : (
+            <Markdown content={msg.content || ""} />
+          )}
         </div>
       </div>
     </div>
@@ -120,6 +173,8 @@ export default function ChatView({
   input,
   setInput,
   onSend,
+  onCopy,
+  onDelete,
   streaming,
   activeTools,
   scrollRef,
@@ -187,7 +242,7 @@ export default function ChatView({
 
         {messages.map((m) => (
           <div key={m.id}>
-            <MessageBubble msg={m} />
+            <MessageBubble msg={m} onCopy={onCopy} onDelete={onDelete} />
           </div>
         ))}
 
