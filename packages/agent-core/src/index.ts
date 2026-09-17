@@ -13,4 +13,12 @@ export {
   calcTool,
   createDefaultTools,
 } from "./default-tools";
+export {
+  systemInfoTool,
+  weatherTool,
+  webSearchTool,
+  scheduleTool,
+  fileSearchTool,
+  createAdvancedTools,
+} from "./advanced-tools";
 export { Memory, memory } from "./memory";
