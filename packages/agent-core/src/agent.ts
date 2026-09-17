@@ -12,6 +12,7 @@ import {
   type ToolContext,
 } from "./tools";
 import { createDefaultTools } from "./default-tools";
+import { createAdvancedTools } from "./advanced-tools";
 
 export interface AgentOptions {
   settings: Settings;
@@ -62,6 +63,7 @@ export class Agent {
     this.tools = opts.tools ?? new ToolRegistry();
     if (!opts.tools) {
       for (const t of createDefaultTools()) this.tools.register(t);
+      for (const t of createAdvancedTools()) this.tools.register(t);
     }
     this.ctx = {
       cwd: opts.cwd ?? process.cwd(),
