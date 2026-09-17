@@ -70,13 +70,50 @@ export default function Page() {
     [activeId, loadConversations]
   );
 
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
   const copyMessage = useCallback((id: string) => {
     const msg = messages.find((m) => m.id === id);
-    if (msg) navigator.clipboard.writeText(msg.content);
+    if (msg) {
+      navigator.clipboard.writeText(msg.content).catch(() => {});
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 1500);
+    }
   }, [messages]);
 
   const deleteMessage = useCallback((id: string) => {
     setMessages((m) => m.filter((msg) => msg.id !== id));
+  }, []);
+
+  const renameConversation = useCallback(
+    async (id: string, title: string) => {
+      await fetch("/api/conversations", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, title }),
+      });
+      loadConversations();
+    },
+    [loadConversations]
+  );
+
+  const exportConversation = useCallback(async (id: string) => {
+    const res = await fetch(`/api/conversations/${id}`);
+    const conv: Conversation = await res.json();
+    const lines: string[] = [`# ${conv.title}\n`];
+    lines.push(`*Exporté le ${new Date().toLocaleString("fr-FR")}*\n`);
+    for (const m of conv.messages) {
+      if (m.role === "tool") continue;
+      const who = m.role === "user" ? "**Vous**" : "**NEXUS**";
+      lines.push(`### ${who}\n\n${m.content}\n`);
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${conv.title.replace(/[^a-zA-Z0-9]/g, "_")}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
   }, []);
 
   const sendMessage = useCallback(async () => {
@@ -244,6 +281,8 @@ export default function Page() {
         onSelect={selectConversation}
         onNew={newConversation}
         onDelete={deleteConversation}
+        onRename={renameConversation}
+        onExport={exportConversation}
         reachable={reachable}
         onOpenSettings={() => setShowSettings(true)}
       />
@@ -255,6 +294,7 @@ export default function Page() {
         onSend={sendMessage}
         onCopy={copyMessage}
         onDelete={deleteMessage}
+        copiedId={copiedId}
         streaming={streaming}
         activeTools={activeTools}
         scrollRef={scrollRef}
