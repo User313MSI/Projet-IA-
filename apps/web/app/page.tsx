@@ -12,6 +12,7 @@ import { uid } from "@ia-app/shared";
 import ChatView from "../components/ChatView";
 import Sidebar from "../components/Sidebar";
 import SettingsPanel from "../components/SettingsPanel";
+import ThemeApplier from "../components/ThemeApplier";
 
 export default function Page() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -269,12 +270,13 @@ export default function Page() {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "260px 1fr",
+        gridTemplateColumns: "280px 1fr",
         height: "100vh",
         background: "var(--bg-0)",
       }}
       className="grid-bg"
     >
+      <ThemeApplier theme={settings?.theme ?? "nexus"} fontSize={settings?.fontSize ?? 15} />
       <Sidebar
         conversations={conversations}
         activeId={activeId}
