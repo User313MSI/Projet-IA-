@@ -11,6 +11,7 @@ interface Props {
   onSend: () => void;
   onCopy: (id: string) => void;
   onDelete: (id: string) => void;
+  copiedId: string | null;
   streaming: boolean;
   activeTools: Record<string, { call: ToolCall; result?: ToolResult; running: boolean }>;
   scrollRef: RefObject<HTMLDivElement | null>;
@@ -20,10 +21,12 @@ function MessageBubble({
   msg,
   onCopy,
   onDelete,
+  copied,
 }: {
   msg: ChatMessage;
   onCopy: (id: string) => void;
   onDelete: (id: string) => void;
+  copied: boolean;
 }) {
   const isUser = msg.role === "user";
   const [hovered, setHovered] = useState(false);
@@ -76,14 +79,15 @@ function MessageBubble({
                 onClick={() => onCopy(msg.id)}
                 style={{
                   fontSize: "11px",
-                  color: "var(--text-mute)",
+                  color: copied ? "var(--ok)" : "var(--text-mute)",
                   padding: "2px 6px",
                   borderRadius: "4px",
-                  background: "var(--bg-3)",
+                  background: copied ? "rgba(0,255,157,0.15)" : "var(--bg-3)",
+                  transition: "all 0.2s",
                 }}
                 title="Copier"
               >
-                ⧉
+                {copied ? "✓ Copié" : "⧉"}
               </button>
               <button
                 onClick={() => onDelete(msg.id)}
@@ -175,6 +179,7 @@ export default function ChatView({
   onSend,
   onCopy,
   onDelete,
+  copiedId,
   streaming,
   activeTools,
   scrollRef,
@@ -242,7 +247,12 @@ export default function ChatView({
 
         {messages.map((m) => (
           <div key={m.id}>
-            <MessageBubble msg={m} onCopy={onCopy} onDelete={onDelete} />
+            <MessageBubble
+              msg={m}
+              onCopy={onCopy}
+              onDelete={onDelete}
+              copied={copiedId === m.id}
+            />
           </div>
         ))}
 
