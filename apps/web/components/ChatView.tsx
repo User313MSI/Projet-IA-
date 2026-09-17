@@ -246,7 +246,7 @@ export default function ChatView({
         )}
 
         {messages.map((m) => (
-          <div key={m.id}>
+          <div key={m.id} className="msg-enter">
             <MessageBubble
               msg={m}
               onCopy={onCopy}
@@ -255,6 +255,12 @@ export default function ChatView({
             />
           </div>
         ))}
+
+        {streaming && (
+          <div className="loading-dots" style={{ textAlign: "center", padding: "12px", color: "var(--accent)", fontSize: "20px" }}>
+            <span>●</span> <span>●</span> <span>●</span>
+          </div>
+        )}
 
         {toolList.length > 0 && (
           <div style={{ margin: "16px 0" }}>
@@ -274,6 +280,14 @@ export default function ChatView({
           </div>
         )}
       </div>
+
+      {streaming && (
+        <div style={{ maxWidth: "920px", width: "100%", margin: "0 auto", padding: "0 32px" }}>
+          <div className="progress-bar">
+            <div className="progress-bar-fill" style={{ width: "100%" }} />
+          </div>
+        </div>
+      )}
 
       <div
         style={{
