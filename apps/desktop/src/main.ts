@@ -1,52 +1,9 @@
-import { app, BrowserWindow, shell, session } from "electron";
+import { app, BrowserWindow, shell } from "electron";
 import * as path from "node:path";
 
 const isDev = !app.isPackaged;
 
 let mainWindow: BrowserWindow | null = null;
-
-// Politique CSP stricte : empêche l'exécution de scripts inline, le chargement
-// de ressources distantes non autorisées, et limite les origines de connexion.
-// Tout le contenu provient de l'origine locale (self).
-const CSP = [
-  "default-src 'self'",
-  "script-src 'self'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
-  "font-src 'self' data:",
-  "connect-src 'self' http://127.0.0.1:11434 http://localhost:11434 https://wttr.in https://html.duckduckgo.com",
-  "frame-ancestors 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-].join("; ");
-
-function configureCsp(): void {
-  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-    callback({
-      responseHeaders: {
-        ...details.responseHeaders,
-        "Content-Security-Policy": [CSP],
-      },
-    });
-  });
-}
-
-// Bloque la création de fenêtres/liaisons externes sauf ouverture explicite.
-function configureNavigation(win: BrowserWindow): void {
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    void shell.openExternal(url);
-    return { action: "deny" };
-  });
-  win.webContents.on("will-navigate", (event, url) => {
-    const allowed = isDev
-      ? url.startsWith("http://127.0.0.1:3000") || url.startsWith("http://localhost:3000")
-      : url.startsWith("file://");
-    if (!allowed) {
-      event.preventDefault();
-      void shell.openExternal(url);
-    }
-  });
-}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -60,15 +17,11 @@ function createWindow(): void {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
-      webSecurity: true,
-      allowRunningInsecureContent: false,
-      preload: path.join(__dirname, "preload.js"),
     },
   });
 
   if (isDev) {
-    mainWindow.loadURL("http://127.0.0.1:3000");
+    mainWindow.loadURL("http://localhost:3000");
     mainWindow.webContents.openDevTools({ mode: "detach" });
   } else {
     mainWindow.loadFile(
@@ -76,11 +29,13 @@ function createWindow(): void {
     );
   }
 
-  configureNavigation(mainWindow);
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    void shell.openExternal(url);
+    return { action: "deny" };
+  });
 }
 
 app.whenReady().then(() => {
-  configureCsp();
   createWindow();
 
   app.on("activate", () => {
