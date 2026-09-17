@@ -70,6 +70,15 @@ export default function Page() {
     [activeId, loadConversations]
   );
 
+  const copyMessage = useCallback((id: string) => {
+    const msg = messages.find((m) => m.id === id);
+    if (msg) navigator.clipboard.writeText(msg.content);
+  }, [messages]);
+
+  const deleteMessage = useCallback((id: string) => {
+    setMessages((m) => m.filter((msg) => msg.id !== id));
+  }, []);
+
   const sendMessage = useCallback(async () => {
     const text = input.trim();
     if (!text || streaming) return;
@@ -244,6 +253,8 @@ export default function Page() {
         input={input}
         setInput={setInput}
         onSend={sendMessage}
+        onCopy={copyMessage}
+        onDelete={deleteMessage}
         streaming={streaming}
         activeTools={activeTools}
         scrollRef={scrollRef}
