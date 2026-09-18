@@ -7,7 +7,7 @@ const webDir = path.join(root, "apps", "web");
 function startNextDev() {
   const next = spawn(
     process.platform === "win32" ? "npx.cmd" : "npx",
-    ["next", "dev", "-H", "127.0.0.1", "-p", "3000"],
+    ["next", "dev", "-H", "127.0.0.1", "-p", "3001"],
     { cwd: webDir, stdio: "inherit", shell: true }
   );
   next.on("error", (err) => {
@@ -18,16 +18,18 @@ function startNextDev() {
 }
 
 function startElectron() {
+  // Chemin vers Electron dans apps/desktop/node_modules
+  const desktopDir = path.join(root, "apps", "desktop");
   const electronBin = path.join(
-    root,
+    desktopDir,
     "node_modules",
     ".bin",
     process.platform === "win32" ? "electron.cmd" : "electron"
   );
   const electron = spawn(
     electronBin,
-    [path.join(__dirname, "..", "..", "desktop", "dist", "main.js")],
-    { cwd: root, stdio: "inherit", shell: true }
+    [path.join(desktopDir, "src", "main.ts")],
+    { cwd: desktopDir, stdio: "inherit", shell: true }
   );
   electron.on("close", () => process.exit(0));
   return electron;
