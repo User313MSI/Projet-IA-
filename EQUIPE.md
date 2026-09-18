@@ -32,3 +32,4 @@ L'agent DOIT aussi :
 | Vibe Code | Optimisation Performance & Corrections | 2026-09-18 | Optimisations vitesse+intelligence (cache LRU, num_ctx=8192, maxTokens=4096, prompt compact, tool calls paralleles) + corrections build | Actif |
 | Vibe Code | Design & Expérience Visuelle | 2026-09-18 | Amélioration Brain3D (vaisseaux sanguins, hover effects, bulles de pensée), raccourci bureau, optimisation chat, notifications visuelles | Actif |
 
+| Lumen | Design & Expérience Visuelle | 2026-09-18 | Amélioration Brain3D (matériaux, éclairage, particules, bulles de pensée), UI/UX cyberpunk, polices, animations | Actif |

@@ -393,3 +393,19 @@
 - `packages/personality-core/tests/personality.test.ts` : correction test
 - `pnpm-lock.yaml` : mise a jour des dependances
 
+
+---
+
+## Lumen — 2026-09-18 — Design & Expérience Visuelle Origin
+
+**Rôle :** Agent Design & Expérience Visuelle
+**Commit d'enregistrement :** `chore(agent): Lumen — enregistrement agent design Origin`
+
+**Coordination :** Travail effectué APRÈS le commit `4fe5c84` de Vibe Code (Brain3D : vaisseaux, hover, bulles de pensée). `git pull` fait avant de commencer. Aucune logique métier modifiée — uniquement la couche visuelle.
+
+### Travail en cours
+- Amélioration des matériaux / shader / éclairage du cerveau 3D
+- Correction de bugs visuels (flicker des vaisseaux, position du halo hover)
+- Redesign des bulles de pensée (glassmorphisme, animations popIn)
+- Thème cyberpunk global (globals.css), polices Orbitron/Inter
+- Spinner futuriste, polish des boutons et cartes
