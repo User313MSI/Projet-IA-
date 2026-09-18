@@ -1,3 +1,10 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# Autorise les scripts d'installation (postinstall) pour ces paquets only.
+# Electron DOIT executer son postinstall pour telecharger son binaire,
+# sinon "Electron failed to install correctly" au lancement.
+onlyBuiltDependencies:
+  - electron
+  - esbuild

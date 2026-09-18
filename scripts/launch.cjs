@@ -186,6 +186,26 @@ function checkOllama() {
   }
 }
 
+// Fallback navigateur : si Electron echoue, on ouvre le navigateur sur Next.js
+let browserFallbackUsed = false;
+function fallbackToBrowser() {
+  if (browserFallbackUsed) return;
+  browserFallbackUsed = true;
+  log("Ouverture du navigateur (mode fallback) sur http://127.0.0.1:3001...", "magenta");
+  log("NEXUS reste accessible tant que cette fenêtre est ouverte.");
+  try {
+    const { exec } = require("node:child_process");
+    const cmd = process.platform === "win32"
+      ? 'start "" http://127.0.0.1:3001'
+      : process.platform === "darwin"
+        ? "open http://127.0.0.1:3001"
+        : "xdg-open http://127.0.0.1:3001";
+    exec(cmd);
+  } catch {
+    // Le navigateur ne s'ouvre pas -> l'utilisateur peut ouvrir l'URL manuellement.
+  }
+}
+
 // Étape 5 : Lancement de l'application
 function launchApp() {
   if (isProduction) {
@@ -297,13 +317,19 @@ function launchApp() {
       
       electron.on("error", (err) => {
         logError(`Erreur Electron : ${err.message}`);
-        process.exit(1);
+        fallbackToBrowser();
       });
       
-      electron.on("close", () => {
-        log("Electron arrêté.");
-        next.kill();
-        process.exit(0);
+      electron.on("close", (code) => {
+        if (code !== 0 && !browserFallbackUsed) {
+          logError(`Electron a échoué (code ${code}).`);
+          log("Solution : lancez \"pnpm install\" dans le projet pour retélécharger le binaire Electron.");
+          fallbackToBrowser();
+        } else {
+          log("Electron arrêté.");
+          next.kill();
+          process.exit(0);
+        }
       });
       
       // Gérer l'arrêt
