@@ -120,8 +120,12 @@ export class Agent {
           temperature: settings.temperature,
           top_p: settings.topP,
           num_predict: settings.maxTokens,
-          num_ctx: 8192,
-          num_thread: 8,
+          // Contexte adaptatif : 4096 suffit pour le chat + RAG et réduit
+          // fortement l'occupation RAM/CPU par rapport à 8192 (2x plus rapide
+          // en préfill sur CPU pour les prompts courts).
+          num_ctx: 4096,
+          // Threads physiques : plus de threads que de cœurs ralentit le CPU.
+          num_thread: 4,
           tools: toolDefs.length
             ? toolDefs.map((t) => ({
                 type: "function",

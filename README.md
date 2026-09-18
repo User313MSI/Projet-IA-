@@ -30,10 +30,10 @@ Télécharge et installe Ollama : https://ollama.com/download
 Puis télécharge le modèle :
 
 ```bash
-ollama pull qwen2.5:14b
+ollama pull qwen2.5:7b
 ```
 
-> Sur 16 Go RAM CPU, `qwen2.5:14b` (~9 Go RAM) est le maximum réaliste. Pour aller plus vite, `qwen2.5:7b` ou `mistral-nemo:12b` sont des alternatives.
+> `qwen2.5:7b` (~4,7 Go RAM) est le modèle par défaut : rapide sur CPU (2x plus rapide que le 14b). Pour plus d'intelligence si tu as de la marge : `qwen2.5:14b` (~9 Go RAM, 2x plus lent).
 
 ### 2. Installer Node.js 20+
 

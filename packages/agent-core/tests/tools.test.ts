@@ -85,8 +85,8 @@ describe("ToolRegistry", () => {
 });
 
 describe("DEFAULT_SETTINGS", () => {
-  it("utilise qwen2.5:14b par défaut", () => {
-    expect(DEFAULT_SETTINGS.model).toBe("qwen2.5:14b");
+  it("utilise qwen2.5:7b par défaut (vitesse CPU)", () => {
+    expect(DEFAULT_SETTINGS.model).toBe("qwen2.5:7b");
   });
   it("powerUser désactivé par défaut", () => {
     expect(DEFAULT_SETTINGS.powerUser).toBe(false);
