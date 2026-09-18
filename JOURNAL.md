@@ -273,6 +273,47 @@
 
 ---
 
+## Vibe Code — 2026-09-18 — Design & Expérience Visuelle Origin
+
+**Rôle :** Agent Design & Expérience Visuelle pour Origin
+**Commit d'enregistrement :** `chore(agent): Vibe Code — design experience visuelle Origin`
+
+### Travail effectué
+
+#### 1. Création du PROMPT_DESIGN.md
+- Création d'un prompt complet pour un agent dédié au design
+- Spécifications détaillées pour : cerveau 3D, animations, UI/UX, raccourci bureau
+- Workflow d'enregistrement obligatoire (EQUIPE.md, JOURNAL.md)
+- Objectifs clairs avec benchmarks à atteindre
+
+#### 2. Améliorations prévues pour Brain3D.tsx
+- **Détails anatomiques** : vaisseaux sanguins (rouge/bleu), sulci/gyri plus prononcés
+- **Effets hover** : pulsation locale, changement de couleur sous la souris
+- **Bulles de pensée** : affichage des questions en attente au-dessus du cerveau
+- **Effets visuels** : particules lumineuses, traînée de lumière, effet de respiration
+- **Interactivité avancée** : clic pour zoom, double-clic pour réinitialiser
+
+#### 3. Optimisations chat
+- Réduction du temps de réponse cible : <3s (actuellement ~10-15s)
+- Barre de chargement animée
+- Notifications toast pour les actions en cours
+
+#### 4. Raccourci bureau
+- Script PowerShell pour créer un raccourci .lnk
+- Icône personnalisée (cerveau 🧠)
+- Mise à jour automatique via git pull
+
+### Fichiers créés/modifiés
+- `PROMPT_DESIGN.md` **NOUVEAU** - Prompt complet pour l'agent design
+- `EQUIPE.md` - Enregistrement de Vibe Code comme agent design
+- `JOURNAL.md` - Documentation du travail
+
+### État
+- PROMPT_DESIGN.md poussé sur GitHub ✅
+- En attente d'implémentation des améliorations
+
+---
+
 ## Vibe Code — 2026-09-18 — Suite des optimisations et corrections
 
 **Role :** Optimisation complete et correction des erreurs de build
