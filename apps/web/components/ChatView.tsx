@@ -427,8 +427,30 @@ export default function ChatView({
         ))}
 
         {streaming && (
-          <div className="loading-dots" style={{ textAlign: "center", padding: "12px", color: "var(--accent)", fontSize: "20px" }}>
-            <span>●</span> <span>●</span> <span>●</span>
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "10px",
+            padding: "14px",
+          }}>
+            <div className="loading-dots" style={{ color: "var(--accent)", fontSize: "20px" }}>
+              <span>●</span> <span>●</span> <span>●</span>
+            </div>
+            <div style={{
+              fontSize: "12px",
+              color: "var(--text-mute)",
+              fontStyle: "italic",
+              animation: "pulseText 1.5s ease-in-out infinite",
+            }}>
+              Origin réfléchit...
+            </div>
+            <style jsx>{`
+              @keyframes pulseText {
+                0%, 100% { opacity: 0.4; }
+                50% { opacity: 1; }
+              }
+            `}</style>
           </div>
         )}
 
