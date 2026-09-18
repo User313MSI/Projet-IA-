@@ -514,3 +514,23 @@ Trois goulots identifiés dans la chaîne de réponse :
 ### Note de coordination (agent maison / monde virtuel)
 - Aucun fichier du monde virtuel touché. La route `/api/chat` reste inchangée dans son contrat (mêmes événements SSE, même payload)
 - Si vous affichez le chat dans le Salon de la maison, consommez le même stream SSE — rien à changer
+
+---
+
+## Aurora — 2026-09-18 — Monde Virtuel d'Origin (la Maison)
+
+**Rôle :** Agent Design Monde Virtuel (3D)
+
+**Commit d'enregistrement :** `chore(agent): Aurora — enregistrement monde virtuel Origin`
+
+**Mission :** Construire la maison virtuelle 3D d'Origin (prompt PROMPT_MAISON.md) : extérieur sur plateforme flottante dans un ciel étoilé, intérieur où chaque pièce matérialise une fonction d'Origin (Cerveau, Bibliothèque/RAG, Interview, Salon/Chat, Chambre/Personnalité, Jardin/Évolution), avatar orbe d'Origin qui se déplace de pièce en pièce. Accès depuis /origin via bouton « Maison », page `/origin/maison`.
+
+### Plan technique
+- Nouveaux fichiers uniquement : `apps/web/components/origin/world/*` + `apps/web/app/origin/maison/page.tsx` + un bouton « Maison » dans `apps/web/app/origin/page.tsx` (aucune modification de Brain3D.tsx, des API routes, des packages ou des stores)
+- Three.js pur (même approche que Brain3D : useEffect + cleanup GPU), pas de R3F (fibre/drei installés mais non utilisés — évite l'alourdissement du bundle)
+- Three.js pur, `dpr` ≤ 2, low-poly stylisé lumineux, textures procédurales (aucune dépendance ajoutée)
+- Données via fetchs existants : `/api/origin/state`, `/api/origin/questions`, `/api/chat` (SSE), `/api/conversations`
+- Phase 3 (avatar orbe réactif) intégrée dès la V1
+
+### Travail en cours
+- [en cours] Construction du monde — détails et vérifications à la fin de session

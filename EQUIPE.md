@@ -33,3 +33,4 @@ L'agent DOIT aussi :
 | Vibe Code | Design & Expérience Visuelle | 2026-09-18 | Amélioration Brain3D (vaisseaux sanguins, hover effects, bulles de pensée), raccourci bureau, optimisation chat, notifications visuelles | Actif |
 
 | Lumen | Design & Expérience Visuelle | 2026-09-18 | Amélioration Brain3D (matériaux, éclairage, particules, bulles de pensée), UI/UX cyberpunk, polices, animations | Actif |
+| Aurora | Monde Virtuel d'Origin | 2026-09-18 | Création de la maison virtuelle 3D (/origin/maison) : extérieur plateforme flottante, pièces = fonctions d'Origin, avatar orbe | Actif |
