@@ -78,7 +78,7 @@ function installDependencies() {
   
   try {
     // Vérifier si pnpm est disponible
-    const pnpmCheck = spawnSync("pnpm", ["--version"], { stdio: "pipe" });
+    const pnpmCheck = spawnSync("pnpm", ["--version"], { stdio: "pipe", shell: true });
     if (pnpmCheck.status !== 0) {
       logError("pnpm non trouvé. Veuillez installer pnpm : npm install -g pnpm");
       return false;
@@ -89,7 +89,7 @@ function installDependencies() {
     const result = spawnSync(
       "pnpm",
       ["install"],
-      { cwd: root, stdio: "inherit" }
+      { cwd: root, stdio: "inherit", shell: true }
     );
     
     if (result.status === 0) {
@@ -113,7 +113,7 @@ function buildPackages() {
     const result = spawnSync(
       "pnpm",
       ["build"],
-      { cwd: root, stdio: "inherit" }
+      { cwd: root, stdio: "inherit", shell: true }
     );
     
     if (result.status === 0) {
