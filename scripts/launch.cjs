@@ -9,7 +9,7 @@ const { spawn, spawnSync } = require("node:child_process");
 const path = require("node:path");
 const fs = require("node:fs");
 
-const root = path.resolve(__dirname, "..", "..");
+const root = path.resolve(__dirname, "..");
 const webDir = path.join(root, "apps", "web");
 const desktopDir = path.join(root, "apps", "desktop");
 
