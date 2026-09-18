@@ -126,3 +126,29 @@
 - Sécurité d'Aegis et approbation UI de Pont intactes
 
 ---
+
+---
+
+## Architecte — 2026-09-18 — Modélisation d'Origin
+
+**Rôle :** Construction du cerveau numérique d'Origin — personnalité, interview, RAG, visualisation 3D
+**Commit d'enregistrement :** `chore(agent): Architecte — cerveau numérique Origin`
+
+### Vision de l'utilisateur
+- L'IA s'appelle **Origin** (choisi par l'utilisateur)
+- L'utilisateur veut **modeler lui-même** la personnalité d'Origin (valeurs, ton, vision du monde)
+- Système d'**interview en temps réel** : Origin pose des questions, garde ses questions en attente, ne conclut rien sans réponse
+- **Base de connaissances (RAG)** : l'utilisateur donne des livres/notes → Origin les indexe, recherche dedans avant de répondre
+- **Cerveau numérique 3D** : cerveau anatomique réaliste + réseau de neurones abstrait, impulsions lumineuses en temps réel quand Origin réfléchit
+- **Suivi temps réel** : ce qu'Origin sait, comment elle réagit, évolution
+- Accès **maison (même WiFi)** pour le moment — pas de cloud
+- Le tout dans NEXUS (web + desktop), design futuriste
+
+### Architecture prévue
+- `packages/personality-core/` : cœur d'Origin (identité, valeurs, ton, vision du monde, interview)
+- `packages/knowledge-core/` : RAG local (embeddings Ollama, base vectorielle, indexation livres)
+- `apps/web/components/origin/` : Brain3D (React Three Fiber), Interview, KnowledgeLibrary
+- `apps/web/app/origin/` : page cerveau numérique
+
+### Travail (EN COURS)
+

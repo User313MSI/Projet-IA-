@@ -10,6 +10,7 @@
 | Vibe | Créateur & architecte | 2026-09-17 | Création complète du projet NEXUS (moteur IA, web app, desktop, 30 nouveautés) | Terminé |
 | Aegis | Agent de sécurité | 2026-09-17 | Audit sécurité, durcissement (allowlist, confinement chemins, token API, Electron, 49 tests) | Terminé |
 | Pont | Approbation UI | 2026-09-17 | Câblage de l'approbation UI (approval_required, /api/approve, ApprovalCard, mode power user) | Actif |
+| Architecte | Modélisation d'Origin | 2026-09-18 | Création du cerveau numérique 3D, personnalité, interview, RAG (en cours) | Actif |
 
 ---
 
