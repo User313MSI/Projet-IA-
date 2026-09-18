@@ -88,12 +88,14 @@ export default function SettingsPanel({
           }}
         >
           <h2
+            className="display-font"
             style={{
               fontSize: "18px",
               fontWeight: 700,
               background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
+              filter: "drop-shadow(0 0 14px rgba(124,77,255,0.25))",
             }}
           >
             Réglages
@@ -348,6 +350,7 @@ export default function SettingsPanel({
               fontWeight: 700,
               fontSize: "14px",
               opacity: saving ? 0.5 : 1,
+              boxShadow: saving ? "none" : "0 4px 18px rgba(0,229,255,0.25)",
             }}
           >
             {saving ? "Sauvegarde…" : "Enregistrer"}
@@ -366,6 +369,7 @@ const inputStyle: React.CSSProperties = {
   fontSize: "14px",
   width: "100%",
   outline: "none",
+  transition: "border-color 0.25s var(--ease-smooth), box-shadow 0.25s var(--ease-smooth)",
 };
 
 function Field({

@@ -380,12 +380,14 @@ export default function ChatView({
             }}
           >
             <div
+              className="display-font"
               style={{
                 fontSize: "48px",
                 background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 fontWeight: 800,
+                filter: "drop-shadow(0 0 22px rgba(124,77,255,0.3))",
               }}
             >
               ◈ NEXUS
@@ -404,7 +406,8 @@ export default function ChatView({
                       border: "1px solid var(--border)",
                       color: "var(--text-dim)",
                       fontSize: "12px",
-                      transition: "all 0.15s",
+                      transition: "all 0.25s var(--ease-smooth)",
+                      backdropFilter: "blur(8px)",
                     }}
                   >
                     {p}
@@ -427,24 +430,15 @@ export default function ChatView({
         ))}
 
         {streaming && (
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "10px",
-            padding: "14px",
-          }}>
-            <div className="loading-dots" style={{ color: "var(--accent)", fontSize: "20px" }}>
-              <span>●</span> <span>●</span> <span>●</span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "14px", padding: "14px" }}>
+            <div className="spinner-orbit" style={{ width: "34px", height: "34px" }}>
+              <div className="ring" />
+              <div className="ring" />
+              <div className="ring" />
             </div>
-            <div style={{
-              fontSize: "12px",
-              color: "var(--text-mute)",
-              fontStyle: "italic",
-              animation: "pulseText 1.5s ease-in-out infinite",
-            }}>
+            <span style={{ fontSize: "12px", color: "var(--text-mute)", fontStyle: "italic", animation: "pulseText 1.5s ease-in-out infinite" }}>
               Origin réfléchit...
-            </div>
+            </span>
             <style jsx>{`
               @keyframes pulseText {
                 0%, 100% { opacity: 0.4; }
@@ -590,7 +584,8 @@ export default function ChatView({
               fontWeight: 700,
               fontSize: "14px",
               opacity: streaming || !input.trim() ? 0.5 : 1,
-              transition: "all 0.2s",
+              transition: "all 0.25s var(--ease-smooth)",
+              boxShadow: streaming || !input.trim() ? "none" : "0 4px 18px rgba(0,229,255,0.3)",
             }}
           >
             {streaming ? "…" : "→"}

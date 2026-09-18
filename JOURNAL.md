@@ -403,9 +403,59 @@
 
 **Coordination :** Travail effectué APRÈS le commit `4fe5c84` de Vibe Code (Brain3D : vaisseaux, hover, bulles de pensée). `git pull` fait avant de commencer. Aucune logique métier modifiée — uniquement la couche visuelle.
 
-### Travail en cours
-- Amélioration des matériaux / shader / éclairage du cerveau 3D
-- Correction de bugs visuels (flicker des vaisseaux, position du halo hover)
-- Redesign des bulles de pensée (glassmorphisme, animations popIn)
-- Thème cyberpunk global (globals.css), polices Orbitron/Inter
-- Spinner futuriste, polish des boutons et cartes
+### Travail effectué
+
+#### 1. Brain3D.tsx — cerveau 3D (couche visuelle uniquement, logique de Vibe Code intacte)
+- **Shader amélioré** : relief anatomique plus profond (sulci assombries, gyri lumineux), double onde de pensée croisée, micro-scintillement des crêtes, fresnel renforcée sur les reliefs
+- **Membrane externe** : `MeshPhysicalMaterial` translucide avec clearcoat (rendu organique type méninges), rotation lente, opacité respirante
+- **Éclairage pro** : ajout `HemisphereLight` (ambiance ciel/sol) + `SpotLight` (projecteur qui accentue le relief des sulci/gyri)
+- **Blending additif** sur neurones, synapses, impulsions, particules et coquille wireframe → lumière qui "rayonne" au lieu de recouvrir
+- **Correction bug visuel (flicker)** : les vaisseaux sanguins pulsaient avec `Math.random()` à chaque frame → désormais pulsation fluide basée sur `baseOpacity` stable
+- **Correction bug hover** : le halo suiveur était positionné en coordonnées écran (\`e.clientX\`) au lieu de coordonnées conteneur → désormais \`clientX - rect.left\` ; halo agrandi avec dégradé cyan/violet
+- **Correction bug bulles** : les bulles de pensée n'affichaient pas la position calculée \`getBubblePosition\` (prop \`position\` manquante) → répartition orbitale autour du cerveau
+- **Bulles de pensée redessinée** : glassmorphisme (blur + fond translucide), accent coloré par catégorie, queue de bulle style BD, apparition \`popIn\` avec rebond élastique (cubic-bezier spring), disparition fade, flottement décalé
+- **Respiration organique** : double harmonique (deux sinus de fréquences différentes) au lieu d'un seul → mouvement sans à-coups
+- **Rotation auto ralentie** : 0.0025 → 0.0016 rad/frame (plus contemplatif)
+- **Indicateur questions en attente** : pulsation avec glow renforcé (scale + box-shadow)
+- **Cleanup GPU** : dispose de la membrane ajoutée
+
+#### 2. globals.css — thème cyberpunk global
+- Nouvelles variables : \`--danger\`, \`--display\` (Orbitron), \`--ease-spring\`, \`--ease-smooth\`
+- **Spinner futuriste** \`.spinner-orbit\` : triple anneau (violet/cyan/vert) vitesses et directions différentes
+- **Toast** \`.toast\` : glassmorphisme, bordure gauche colorée par type, slide-in depuis la droite
+- **Boutons globaux** : hover translateY(-2px), active scale(0.98), transitions cubic-bezier
+- **Inputs** : focus avec halo cyan (\`box-shadow\`), transitions
+- **Sliders custom** : thumb dégradé avec glow, hover scale
+- **Utilitaires** : \`.glass\` (glassmorphisme), \`.display-font\` (Orbitron)
+
+#### 3. layout.tsx — polices
+- `next/font/google` : **Orbitron** (titres, via \`--font-orbitron\`) + **Inter** (texte, via \`--font-inter\`), \`display: swap\`
+- Branchées dans \`--display\` et \`--sans\` des variables CSS
+
+#### 4. origin/page.tsx — page cerveau
+- Loader d'initialisation : spinner-orbit triple anneau + titre dégradé triple couleur + drop-shadow
+- Loader Brain3D : fond dégradé identique au conteneur 3D + spinner + libellé
+- Titre Origin, onglets, valeurs StatCard, questions d'interview en police display (Orbitron)
+- Barre de progression interview : glow cyan, easing fluide
+- Bouton Répondre : glow violet quand actif
+
+#### 5. ChatView.tsx — chat
+- Indicateur de réflexion : remplace les 3 points par le spinner-orbit + libellé « Origin réflèchit »
+- Titre NEXUS : police display + drop-shadow glow
+- Bouton envoyer : glow cyan quand actif
+- Suggestions : backdrop-blur, transition douce
+
+#### 6. SettingsPanel.tsx — réglages
+- Titre Réglages : police display + drop-shadow
+- Bouton Enregistrer : glow cyan
+- Inputs : transitions de focus
+
+### Vérifications
+- \`pnpm build\` : ✅ (page /origin : 6.88 kB, 109 kB First Load JS)
+- \`pnpm test\` : ✅ 97 tests verts (14 personality + 12 knowledge + 71 agent-core)
+- \`pnpm typecheck\` : ✅ (4 packages)
+
+### Note de coordination pour Vibe Code
+- Aucune logique modifiée dans Brain3D.tsx : vaisseaux, hover, bulles, double-clic, indicateur d'attente fonctionnent comme implémentés
+- 3 corrections de bugs visuels incluses (flicker vaisseaux, offset halo hover, position bulles) — détails ci-dessus
+- Le halo interne de Brain3D (sphère cyan opacity 0.08) a été retiré au profit de la membrane externe + blending additif (rendu plus propre, moins de surfaces qui se bloquent mutuellement)

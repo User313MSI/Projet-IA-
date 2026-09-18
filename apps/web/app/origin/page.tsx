@@ -22,8 +22,17 @@ import type { Document, KnowledgeStats } from "@ia-app/knowledge-core/client";
 const Brain3D = dynamic(() => import("../../components/origin/Brain3D"), {
   ssr: false,
   loading: () => (
-    <div style={{ height: 600, display: "grid", placeItems: "center", color: "var(--text-mute)" }}>
-      Chargement du cerveau 3D...
+    <div style={{ height: 600, display: "grid", placeItems: "center", background: "radial-gradient(ellipse at 50% 40%, #0d0d3e 0%, #07081a 55%, #05060f 100%)", borderRadius: "20px", border: "1px solid rgba(124,77,255,0.15)" }}>
+      <div style={{ textAlign: "center" }}>
+        <div className="spinner-orbit" style={{ marginBottom: "16px" }}>
+          <div className="ring" />
+          <div className="ring" />
+          <div className="ring" />
+        </div>
+        <span style={{ fontSize: "11px", letterSpacing: "2px", textTransform: "uppercase", color: "var(--text-mute)" }}>
+          Chargement du cerveau 3D…
+        </span>
+      </div>
     </div>
   ),
 });
@@ -184,17 +193,14 @@ export default function OriginPage() {
     return (
       <div style={{ display: "grid", placeItems: "center", height: "100vh", background: "radial-gradient(ellipse at center, #0a0a2e 0%, #05060f 70%)", color: "var(--text)" }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{
-            width: 64, height: 64, borderRadius: "50%",
-            border: "3px solid rgba(124,77,255,0.2)",
-            borderTopColor: "#7c4dff",
-            animation: "spin 1s linear infinite",
-            margin: "0 auto 20px",
-          }} />
-          <p style={{ fontSize: "15px", fontWeight: 600, letterSpacing: "2px", textTransform: "uppercase", background: "linear-gradient(135deg, #7c4dff, #00e5ff)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+          <div className="spinner-orbit" style={{ marginBottom: "24px" }}>
+            <div className="ring" />
+            <div className="ring" />
+            <div className="ring" />
+          </div>
+          <p style={{ fontSize: "15px", fontWeight: 600, letterSpacing: "3px", textTransform: "uppercase", fontFamily: "var(--display)", background: "linear-gradient(135deg, #7c4dff, #00e5ff, #00ff9d)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", filter: "drop-shadow(0 0 18px rgba(124,77,255,0.35))" }}>
             Initialisation d’Origin…
           </p>
-          <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
         </div>
       </div>
     );
@@ -213,7 +219,7 @@ export default function OriginPage() {
         <a href="/" style={{ color: "var(--text-mute)", textDecoration: "none", fontSize: "14px", display: "inline-flex", alignItems: "center", gap: "6px" }}>
           ← Retour
         </a>
-        <h1 style={{ fontSize: "26px", fontWeight: 800, margin: 0, letterSpacing: "-0.5px" }}>
+        <h1 style={{ fontSize: "26px", fontWeight: 800, margin: 0, letterSpacing: "-0.5px", fontFamily: "var(--display)" }}>
           <span style={{ background: "linear-gradient(135deg, #7c4dff, #00e5ff, #00ff9d)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", filter: "drop-shadow(0 0 20px rgba(124,77,255,0.3))" }}>
             Origin
           </span>
@@ -253,8 +259,9 @@ export default function OriginPage() {
                   display: "inline-flex",
                   alignItems: "center",
                   gap: "7px",
-                  transition: "all 0.2s",
+                  transition: "all 0.25s var(--ease-smooth)",
                   boxShadow: active ? `0 0 16px ${meta.color}33` : "none",
+                  fontFamily: "var(--display)",
                 }}
               >
                 <span style={{ fontSize: "15px" }}>{meta.icon}</span>
@@ -318,13 +325,14 @@ export default function OriginPage() {
         {activeTab === "interview" && (
           <div style={{ maxWidth: 700, margin: "0 auto" }}>
             <div style={{ marginBottom: "20px" }}>
-              <div style={{ height: "8px", borderRadius: "4px", background: "var(--bg-3)", overflow: "hidden" }}>
+              <div style={{ height: "8px", borderRadius: "4px", background: "var(--bg-3)", overflow: "hidden", boxShadow: "inset 0 1px 3px rgba(0,0,0,0.4)" }}>
                 <div style={{
                   width: `${progress}%`,
                   height: "100%",
                   background: "linear-gradient(90deg, #7c4dff, #00e5ff)",
-                  transition: "width 0.5s",
+                  transition: "width 0.6s var(--ease-smooth)",
                   borderRadius: "4px",
+                  boxShadow: "0 0 12px rgba(0,229,255,0.4)",
                 }} />
               </div>
               <p style={{ textAlign: "center", marginTop: "8px", color: "var(--text-mute)", fontSize: "13px" }}>
@@ -353,7 +361,7 @@ export default function OriginPage() {
                     {CATEGORY_LABELS[currentQuestion.category]}
                   </span>
                 </div>
-                <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "8px" }}>
+                <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "8px", fontFamily: "var(--display)" }}>
                   {currentQuestion.question}
                 </h2>
                 {currentQuestion.context && (
@@ -392,6 +400,7 @@ export default function OriginPage() {
                       cursor: interviewAnswer.trim() ? "pointer" : "not-allowed",
                       fontWeight: 600,
                       fontSize: "14px",
+                      boxShadow: interviewAnswer.trim() ? "0 4px 18px rgba(124,77,255,0.35)" : "none",
                     }}
                   >
                     Répondre
@@ -705,7 +714,7 @@ function StatCard({ label, value, sub, color }: { label: string; value: string; 
     >
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: `linear-gradient(90deg, transparent, ${color}, transparent)` }} />
       <p style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "1.5px", color: "var(--text-mute)", margin: "0 0 8px 0", fontWeight: 600 }}>{label}</p>
-      <p style={{ fontSize: "32px", fontWeight: 800, color, margin: "0 0 6px 0", textShadow: `0 0 20px ${color}55` }}>{value}</p>
+      <p style={{ fontSize: "32px", fontWeight: 800, color, margin: "0 0 6px 0", textShadow: `0 0 20px ${color}55`, fontFamily: "var(--display)" }}>{value}</p>
       <p style={{ fontSize: "12px", color: "var(--text-mute)", margin: 0 }}>{sub}</p>
     </div>
   );

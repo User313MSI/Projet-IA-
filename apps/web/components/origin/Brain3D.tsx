@@ -40,6 +40,7 @@ interface Pulse {
 interface VesselSegment {
   line: THREE.Line;
   color: number;
+  baseOpacity: number;
 }
 
 // Bruit 3D amélioré pour des détails anatomiques plus réalistes
@@ -84,76 +85,100 @@ function createVesselPath(
   return points;
 }
 
-// Composant pour afficher les bulles de pensée
+// Composant pour afficher les bulles de pensée (style BD futuriste)
 function ThoughtBubble({
   text,
   index,
+  position,
   onRemove,
 }: {
   text: string;
   index: number;
+  position: { x: string; y: string };
   onRemove: () => void;
 }) {
-  const [visible, setVisible] = useState(true);
-  
+  const [leaving, setLeaving] = useState(false);
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      setVisible(false);
-      setTimeout(onRemove, 300);
+      setLeaving(true);
+      setTimeout(onRemove, 350);
     }, 5000);
     return () => clearTimeout(timer);
   }, []);
 
-  if (!visible) return null;
+  const accents = ["#7c4dff", "#00e5ff", "#00ff9d", "#ff6b9d", "#ffb300", "#ff4d4d"];
+  const accent = accents[index % accents.length] ?? accents[0]!;
 
-  const colors = [
-    "rgba(124, 77, 255, 0.85)",
-    "rgba(0, 229, 255, 0.85)",
-    "rgba(0, 255, 157, 0.85)",
-    "rgba(255, 107, 157, 0.85)",
-    "rgba(255, 179, 0, 0.85)",
-    "rgba(255, 77, 77, 0.85)",
-  ];
-  
-  const color = colors[index % colors.length] ?? colors[0]!;
-  
   return (
     <div
       style={{
         position: "absolute",
-        background: color,
-        borderRadius: "16px",
-        padding: "8px 14px",
+        left: position.x,
+        top: position.y,
+        transform: "translate(-50%, -100%) scale(1)",
+        opacity: leaving ? 0 : 1,
+        background: "rgba(10, 13, 26, 0.55)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        borderRadius: "14px",
+        padding: "9px 14px",
         fontSize: "13px",
         fontWeight: 500,
-        color: "#ffffff",
-        border: `1px solid ${color.replace("0.85", "1")}`,
-        boxShadow: `0 4px 20px ${color.replace("0.85", "0.4")}`,
-        animation: "pulse 2s ease-in-out infinite, float 3s ease-in-out infinite",
+        color: "#e6f0ff",
+        border: `1px solid ${accent}66`,
+        boxShadow: `0 4px 24px ${accent}33, inset 0 1px 0 rgba(255,255,255,0.08)`,
+        animation: `bubblePopIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), bubbleFloat 3.2s ease-in-out ${index * 0.4}s infinite`,
         zIndex: 10,
         maxWidth: "280px",
         cursor: "pointer",
-        transition: "all 0.3s ease",
+        transition: "opacity 0.35s ease, transform 0.35s ease, box-shadow 0.25s ease",
       }}
       onClick={onRemove}
       onMouseEnter={(e) => {
-        e.currentTarget.style.transform = "scale(1.05)";
-        e.currentTarget.style.boxShadow = `0 6px 30px ${color.replace("0.85", "0.6")}`;
+        e.currentTarget.style.boxShadow = `0 8px 36px ${accent}55, inset 0 1px 0 rgba(255,255,255,0.12)`;
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "";
-        e.currentTarget.style.boxShadow = `0 4px 20px ${color.replace("0.85", "0.4")}`;
+        e.currentTarget.style.boxShadow = `0 4px 24px ${accent}33, inset 0 1px 0 rgba(255,255,255,0.08)`;
       }}
     >
       {text}
+      {/* Queue de bulle (style BD) */}
+      <div
+        style={{
+          position: "absolute",
+          left: "26px",
+          bottom: "-5px",
+          width: "10px",
+          height: "10px",
+          background: "rgba(10, 13, 26, 0.55)",
+          borderRight: `1px solid ${accent}66`,
+          borderBottom: `1px solid ${accent}66`,
+          transform: "rotate(45deg)",
+        }}
+      />
       <style jsx>{`
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.02); }
+        @keyframes bubblePopIn {
+          0% {
+            opacity: 0;
+            transform: translate(-50%, -100%) scale(0.5);
+          }
+          60% {
+            opacity: 1;
+            transform: translate(-50%, -100%) scale(1.08);
+          }
+          100% {
+            opacity: 1;
+            transform: translate(-50%, -100%) scale(1);
+          }
         }
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-5px); }
+        @keyframes bubbleFloat {
+          0%, 100% {
+            margin-top: 0;
+          }
+          50% {
+            margin-top: -6px;
+          }
         }
       `}</style>
     </div>
@@ -174,13 +199,14 @@ export default function Brain3D({
   const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
   const [hoverActive, setHoverActive] = useState(false);
 
-  // Position des bulles de pensée (calculées en 3D -> 2D)
+  // Position des bulles de pensée : répartition autour du cerveau
   const getBubblePosition = (index: number) => {
-    const angle = (index * 70) % 360;
-    const radius = 200 + Math.sin(Date.now() * 0.001 + index) * 20;
+    const angle = (-160 + index * 47) * (Math.PI / 180);
+    const radiusX = 150 + (index % 2) * 40;
+    const radiusY = 110 + (index % 3) * 30;
     return {
-      x: `calc(50% + ${Math.cos((angle * Math.PI) / 180) * radius}px)`,
-      y: `calc(40% + ${Math.sin((angle * Math.PI) / 180) * radius}px)`,
+      x: `calc(50% + ${Math.cos(angle) * radiusX}px)`,
+      y: `calc(38% + ${Math.sin(angle) * radiusY}px)`,
     };
   };
 
@@ -217,7 +243,7 @@ export default function Brain3D({
       renderer.setSize(width, height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.15;
+      renderer.toneMappingExposure = 1.2;
       mount.appendChild(renderer.domElement);
 
       // Raycaster pour les effets hover
@@ -226,6 +252,8 @@ export default function Brain3D({
 
       // --- Éclairage cinématique amélioré ---
       scene.add(new THREE.AmbientLight(0x303060, 0.35));
+      const hemi = new THREE.HemisphereLight(0x7c4dff, 0x05060f, 0.5);
+      scene.add(hemi);
       const key = new THREE.PointLight(0x7c4dff, 3.5, 80);
       key.position.set(12, 8, 12);
       scene.add(key);
@@ -238,6 +266,13 @@ export default function Brain3D({
       const accent = new THREE.PointLight(0xff6b9d, 1.0, 50);
       accent.position.set(0, -10, 6);
       scene.add(accent);
+      
+      // Projecteur pour le relief des sulci/gyri
+      const spot = new THREE.SpotLight(0xb8c4ff, 2.0, 120, Math.PI / 5, 0.6, 1.2);
+      spot.position.set(0, 22, 18);
+      spot.target.position.set(0, 0, 0);
+      scene.add(spot);
+      scene.add(spot.target);
       
       // Lumière directionnelle pour plus de profondeur
       const directional = new THREE.DirectionalLight(0xffffff, 0.2);
@@ -253,7 +288,6 @@ export default function Brain3D({
       const posAttr = baseGeo.attributes.position as THREE.BufferAttribute;
       const vertexCount = posAttr.count;
       const deformation = new Float32Array(vertexCount);
-      const vertexNormals = new Float32Array(vertexCount * 3);
 
       for (let i = 0; i < vertexCount; i++) {
         const x = posAttr.getX(i);
@@ -339,29 +373,35 @@ export default function Brain3D({
           varying vec3 vWorldPos;
           
           void main() {
-            // Calcul de la couleur de base selon la déformation
-            float depth = clamp((vDeform - 0.82) * 5.0, 0.0, 1.0);
+            // Relief : sulci sombres et profondes, gyri lumineux et lisses
+            float depth = clamp((vDeform - 0.80) * 4.5, 0.0, 1.0);
+            float crease = 1.0 - smoothstep(0.0, 0.45, depth);
             vec3 base = mix(uColorA, uColorB, depth);
             
-            // Pulsation "pensée" qui parcourt le cerveau
+            // Assombrissement doux au fond des sillons (profondeur anatomique)
+            base *= 0.55 + depth * 0.45;
+            
+            // Pulsation "pensée" qui parcourt le cerveau (double onde croisée)
             float wave = sin(uTime * 1.2 + vPos.y * 0.6 + vPos.x * 0.3) * 0.5 + 0.5;
-            vec3 hot = mix(base, uColorHot, wave * (0.15 + uActivity * 0.35));
+            float wave2 = sin(uTime * 0.8 - vPos.z * 0.5 + vPos.x * 0.4) * 0.5 + 0.5;
+            float think = max(wave, wave2) * (0.15 + uActivity * 0.35);
+            vec3 hot = mix(base, uColorHot, think);
             
             // Clignotement d'alerte si questions en attente
             hot = mix(hot, uColorHot, uPending * wave * 0.5);
             
-            // Effet hover : lueur locale sous la souris
+            // Effet hover : lueur cyan organique sous la souris
             float hoverDist = length(vWorldPos - uHoverPos);
-            float hoverEffect = smoothstep(3.0, 1.5, hoverDist) * uHoverActive;
-            hot += vec3(0.5, 0.8, 1.0) * hoverEffect * 0.8;
+            float hoverEffect = smoothstep(3.5, 0.8, hoverDist) * uHoverActive;
+            hot += uColorB * hoverEffect * 0.7;
             
-            // Fresnel : lueur sur les bords
+            // Fresnel : lueur sur les bords, renforcée sur les crêtes
             float fres = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 2.5);
-            hot += fres * uColorB * 0.5;
+            hot += fres * uColorB * (0.4 + depth * 0.35);
             
-            // Veines/artères : ajouter des motifs de vaisseaux
-            float vesselPattern = sin(vPos.x * 8.0 + uTime * 0.5) * sin(vPos.y * 6.0) * 0.1;
-            hot = mix(hot, uColorVein, vesselPattern * 0.3);
+            // Micro-scintillement des crêtes (gyri qui "réfléchissent")
+            float sparkle = pow(depth, 3.0) * (0.5 + 0.5 * sin(uTime * 2.0 + vPos.x * 2.0 + vPos.z * 2.0));
+            hot += uColorB * sparkle * 0.08;
             
             gl_FragColor = vec4(hot, 0.55 + hoverEffect * 0.2);
           }
@@ -372,6 +412,22 @@ export default function Brain3D({
       });
       const brainMesh = new THREE.Mesh(baseGeo, brainMat);
       brainGroup.add(brainMesh);
+
+      // --- Membrane externe translucide (réalisme organique) ---
+      const membraneGeo = new THREE.IcosahedronGeometry(brainRadius * 1.03, 3);
+      const membraneMat = new THREE.MeshPhysicalMaterial({
+        color: 0x7c4dff,
+        transparent: true,
+        opacity: 0.07,
+        roughness: 0.25,
+        metalness: 0.1,
+        side: THREE.FrontSide,
+        depthWrite: false,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.4,
+      });
+      const membrane = new THREE.Mesh(membraneGeo, membraneMat);
+      brainGroup.add(membrane);
 
       // --- Vaisseaux sanguins (veines et artères) ---
       const vesselSegments: VesselSegment[] = [];
@@ -393,7 +449,7 @@ export default function Brain3D({
         const vesselLine = new THREE.Line(vesselGeo, vesselMat);
         brainGroup.add(vesselLine);
         
-        vesselSegments.push({ line: vesselLine, color });
+        vesselSegments.push({ line: vesselLine, color, baseOpacity: vesselMat.opacity });
       }
 
       // --- Coquille wireframe externe (halo) ---
@@ -403,19 +459,11 @@ export default function Brain3D({
         wireframe: true,
         transparent: true,
         opacity: 0.08,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
       });
       const shell = new THREE.Mesh(shellGeo, shellMat);
       brainGroup.add(shell);
-
-      // --- Halo sphérique interne (lueur centrale) ---
-      const haloGeo = new THREE.SphereGeometry(brainRadius * 0.4, 32, 32);
-      const haloMat = new THREE.MeshBasicMaterial({
-        color: 0x00e5ff,
-        transparent: true,
-        opacity: 0.08,
-      });
-      const halo = new THREE.Mesh(haloGeo, haloMat);
-      brainGroup.add(halo);
 
       // --- Neurones (points lumineux) ---
       const neuronCount = Math.min(260, 140 + knowledgeCount * 6 + questionsAnswered * 3);
@@ -432,7 +480,13 @@ export default function Brain3D({
         const z = r * Math.cos(phi) * 0.85;
         const category = Math.floor(Math.random() * catColors.length);
         const color = new THREE.Color(catColors[category]!);
-        const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.75 });
+        const mat = new THREE.MeshBasicMaterial({
+          color,
+          transparent: true,
+          opacity: 0.75,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        });
         const mesh = new THREE.Mesh(neuronGeo, mat);
         mesh.position.set(x, y, z);
         brainGroup.add(mesh);
@@ -458,6 +512,8 @@ export default function Brain3D({
                 color: catColors[ni.category]!,
                 transparent: true,
                 opacity: 0.12,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
               })
             );
             brainGroup.add(line);
@@ -486,7 +542,13 @@ export default function Brain3D({
         const to = toNeuron?.basePos;
         if (!from || !to) return;
         const color = new THREE.Color(catColors[fromNeuron?.category ?? 0]!);
-        const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 });
+        const mat = new THREE.MeshBasicMaterial({
+          color,
+          transparent: true,
+          opacity: 0.95,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        });
         const mesh = new THREE.Mesh(pulseGeo, mat);
         mesh.position.copy(from);
         brainGroup.add(mesh);
@@ -541,6 +603,8 @@ export default function Brain3D({
           transparent: true,
           opacity: 0.6,
           sizeAttenuation: true,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
         })
       );
       scene.add(particles);
@@ -581,7 +645,7 @@ export default function Brain3D({
         
         if (intersects.length > 0) {
           const point = intersects[0]!.point;
-          setHoverPosition({ x: e.clientX, y: e.clientY });
+          setHoverPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
           setHoverActive(true);
           (brainMat.uniforms.uHoverPos as THREE.Uniform).value = point;
           (brainMat.uniforms.uHoverActive as THREE.Uniform).value = 1;
@@ -625,8 +689,9 @@ export default function Brain3D({
         brainMat.uniforms.uActivity!.value = activity;
         brainMat.uniforms.uPending!.value = pendingQuestions > 0 ? 1 : 0;
 
+        // Rotation automatique plus lente et élégante
         if (autoRot) {
-          targetRotY += 0.0025;
+          targetRotY += 0.0016;
           targetRotX = 0.1 + Math.sin(t * 0.3) * 0.08;
         }
         curRotX += (targetRotX - curRotX) * 0.06;
@@ -634,18 +699,23 @@ export default function Brain3D({
         brainGroup.rotation.x = curRotX;
         brainGroup.rotation.y = curRotY;
         
-        // Effet de respiration (scale lent)
-        brainGroup.scale.setScalar(1 + Math.sin(t * 0.5) * 0.015);
+        // Effet de respiration organique (double harmonique, sans à-coups)
+        const breath =
+          1 +
+          Math.sin(t * 0.45) * 0.016 +
+          Math.sin(t * 0.9 + 1.3) * 0.006;
+        brainGroup.scale.setScalar(breath);
         
         shell.rotation.y -= 0.001;
-        halo.scale.setScalar(1 + Math.sin(t * 1.5) * 0.04);
+        membrane.rotation.y += 0.0006;
+        membrane.material.opacity = 0.07 + Math.sin(t * 1.5) * 0.015;
 
-        // Animation des vaisseaux sanguins (pulsation)
+        // Animation des vaisseaux sanguins (pulsation cardiaque fluide, sans flicker)
         for (let i = 0; i < vesselSegments.length; i++) {
           const vessel = vesselSegments[i]!;
           const pulse = Math.sin(t * 2 + i * 0.7) * 0.5 + 0.5;
-          (vessel.line.material as THREE.LineBasicMaterial).opacity = 
-            (0.6 + Math.random() * 0.2) * (0.7 + pulse * 0.3);
+          (vessel.line.material as THREE.LineBasicMaterial).opacity =
+            vessel.baseOpacity * (0.65 + pulse * 0.35);
         }
 
         for (const n of neurons) {
@@ -711,10 +781,10 @@ export default function Brain3D({
         renderer.dispose();
         baseGeo.dispose();
         brainMat.dispose();
+        membraneGeo.dispose();
+        membraneMat.dispose();
         shellGeo.dispose();
         shellMat.dispose();
-        haloGeo.dispose();
-        haloMat.dispose();
         neuronGeo.dispose();
         pulseGeo.dispose();
         particleGeo.dispose();
@@ -764,9 +834,10 @@ export default function Brain3D({
         const pos = getBubblePosition(index);
         return (
           <ThoughtBubble
-            key={index}
+            key={`${index}-${question}`}
             text={question}
             index={index}
+            position={pos}
             onRemove={() => {
               setThoughtBubbles(prev => prev.filter((_, i) => i !== index));
             }}
@@ -792,40 +863,33 @@ export default function Brain3D({
           color: "white",
           border: "2px solid #ff4757",
           boxShadow: "0 0 15px rgba(255, 71, 87, 0.6)",
-          animation: "pulse 1.5s ease-in-out infinite",
+          animation: "pendingPulse 1.5s ease-in-out infinite",
           zIndex: 10,
         }}>
           {pendingQuestions}
           <style jsx>{`
-            @keyframes pulse {
-              0%, 100% { transform: scale(1); }
-              50% { transform: scale(1.1); }
+            @keyframes pendingPulse {
+              0%, 100% { transform: scale(1); box-shadow: 0 0 15px rgba(255, 71, 87, 0.6); }
+              50% { transform: scale(1.1); box-shadow: 0 0 24px rgba(255, 71, 87, 0.9); }
             }
           `}</style>
         </div>
       )}
       
-      {/* Effet hover visuel */}
+      {/* Effet hover visuel : halo qui suit la souris */}
       {hoverActive && hoverPosition && (
         <div style={{
           position: "absolute",
-          left: hoverPosition.x - 10,
-          top: hoverPosition.y - 10,
-          width: "20px",
-          height: "20px",
+          left: hoverPosition.x - 24,
+          top: hoverPosition.y - 24,
+          width: "48px",
+          height: "48px",
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(124,77,255,0.6) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(0,229,255,0.35) 0%, rgba(124,77,255,0.15) 40%, transparent 70%)",
+          border: "1px solid rgba(0,229,255,0.25)",
           pointerEvents: "none",
           zIndex: 5,
-          animation: "hoverPulse 0.5s ease-out",
-        }}>
-          <style jsx>{`
-            @keyframes hoverPulse {
-              0% { transform: scale(1); opacity: 0.8; }
-              100% { transform: scale(1.5); opacity: 0; }
-            }
-          `}</style>
-        </div>
+        }} />
       )}
       
       {error && (

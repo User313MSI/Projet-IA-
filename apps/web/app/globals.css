@@ -14,9 +14,13 @@
   --ok: #00ff9d;
   --err: #ff4060;
   --warn: #ffaa00;
+  --danger: #ff4757;
   --radius: 12px;
   --mono: "JetBrains Mono", "Fira Code", ui-monospace, "SF Mono", Menlo, monospace;
-  --sans: "Inter", system-ui, -apple-system, sans-serif;
+  --sans: var(--font-inter), "Inter", "Rajdhani", system-ui, -apple-system, sans-serif;
+  --display: var(--font-orbitron), "Orbitron", "Inter", system-ui, sans-serif;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 [data-theme="ocean"] {
@@ -112,6 +116,18 @@ button {
   border: none;
   background: none;
   color: inherit;
+  transition: transform 0.25s var(--ease-smooth), box-shadow 0.25s var(--ease-smooth),
+    background 0.25s var(--ease-smooth), border-color 0.25s var(--ease-smooth),
+    color 0.25s var(--ease-smooth), opacity 0.2s ease;
+}
+button:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+button:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+button:disabled {
+  cursor: not-allowed;
 }
 
 input,
@@ -119,6 +135,85 @@ textarea,
 select {
   font-family: inherit;
   color: inherit;
+}
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.12);
+}
+input[type="range"] {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-3);
+  appearance: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+  border: 2px solid #05060f;
+  transition: transform 0.2s var(--ease-spring);
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* === Spinner futuriste à triple anneau === */
+.spinner-orbit {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto;
+}
+.spinner-orbit .ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+}
+.spinner-orbit .ring:nth-child(1) {
+  border-top-color: #7c4dff;
+  animation: spinner-spin 1.2s linear infinite;
+}
+.spinner-orbit .ring:nth-child(2) {
+  inset: 7px;
+  border-right-color: #00e5ff;
+  animation: spinner-spin 1.6s linear infinite reverse;
+}
+.spinner-orbit .ring:nth-child(3) {
+  inset: 14px;
+  border-bottom-color: #00ff9d;
+  animation: spinner-spin 0.9s linear infinite;
+}
+@keyframes spinner-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* === Toast notifications === */
+.toast {
+  background: rgba(17, 21, 38, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(124, 77, 255, 0.3);
+  border-left: 3px solid #7c4dff;
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: var(--text);
+  font-size: 13px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), 0 0 20px rgba(124, 77, 255, 0.15);
+  animation: toast-in 0.35s var(--ease-spring);
+}
+.toast.toast-ok { border-left-color: #00ff9d; }
+.toast.toast-err { border-left-color: #ff4757; }
+.toast.toast-warn { border-left-color: #ffaa00; }
+@keyframes toast-in {
+  from { transform: translateX(110%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
 @keyframes pulse-glow {
@@ -179,6 +274,20 @@ select {
     linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
   background-size: 40px 40px;
+}
+
+/* === Glassmorphism === */
+.glass {
+  background: rgba(17, 21, 38, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(124, 77, 255, 0.18);
+}
+
+/* === Titre display futuriste === */
+.display-font {
+  font-family: var(--display);
+  letter-spacing: 0.06em;
 }
 
 /* === Accessibilité === */
