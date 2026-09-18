@@ -30,7 +30,8 @@ export class EmbeddingClient {
     const res = await fetch(`${this.baseUrl}/api/embeddings`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: this.model, prompt: text }),
+      // keep_alive : évite de recharger le modèle d'embedding à chaque requête
+      body: JSON.stringify({ model: this.model, prompt: text, keep_alive: "30m" }),
       signal: AbortSignal.timeout(60000),
     });
     if (!res.ok) {

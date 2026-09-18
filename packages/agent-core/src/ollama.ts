@@ -16,7 +16,16 @@ export interface OllamaChatRequest {
   num_ctx?: number;
   num_thread?: number;
   tools?: unknown[];
+  /** Durée de rétention du modèle en RAM après la requête (évite les rechargements). */
+  keep_alive?: string;
 }
+
+/**
+ * Garde les modèles chargés en RAM 30 minutes après chaque appel.
+ * Sur CPU, recharger un modèle coûte 5-15s : sans ça, chaque message
+ * qui suit une pause ou un appel embedding paie ce délai.
+ */
+const KEEP_ALIVE = "30m";
 
 export interface OllamaChatResponse {
   model: string;
@@ -75,7 +84,7 @@ export class OllamaClient {
     const res = await fetch(`${this.baseUrl}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...req, stream: true }),
+      body: JSON.stringify({ ...req, stream: true, keep_alive: KEEP_ALIVE }),
     });
     if (!res.ok || !res.body) {
       throw new Error(`Ollama chat HTTP ${res.status}`);
@@ -115,7 +124,7 @@ export class OllamaClient {
     const res = await fetch(`${this.baseUrl}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...req, stream: false }),
+      body: JSON.stringify({ ...req, stream: false, keep_alive: KEEP_ALIVE }),
     });
     if (!res.ok) throw new Error(`Ollama chat HTTP ${res.status}`);
     return (await res.json()) as OllamaChatResponse;

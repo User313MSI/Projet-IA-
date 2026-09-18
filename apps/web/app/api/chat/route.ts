@@ -18,6 +18,21 @@ async function buildOriginSystemPrompt(
   basePrompt: string,
   userMessage: string
 ): Promise<string> {
+  const cacheKey = userMessage.slice(0, 200);
+  const cached = promptCache.get(cacheKey);
+  if (cached) return cached;
+  const built = await buildOriginSystemPromptUncached(basePrompt, userMessage);
+  if (promptCache.size >= PROMPT_CACHE_MAX) {
+    promptCache.delete(promptCache.keys().next().value ?? "");
+  }
+  promptCache.set(cacheKey, built);
+  return built;
+}
+
+async function buildOriginSystemPromptUncached(
+  basePrompt: string,
+  userMessage: string
+): Promise<string> {
   let prompt = basePrompt;
   try {
     const personality = await originStore.loadPersonality();
@@ -73,6 +88,11 @@ async function warmModel(model: string, ollamaUrl: string): Promise<void> {
     // Ollama indisponible → on continue sans préchauffage.
   }
 }
+
+// Cache des prompts enrichis (perso + RAG) : si le même message revient,
+// on évite recherche vectorielle + reconstruction du prompt.
+const promptCache = new Map<string, string>();
+const PROMPT_CACHE_MAX = 100;
 
 export async function POST(req: NextRequest) {
   const g = await guard(req);
