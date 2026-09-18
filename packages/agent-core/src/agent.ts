@@ -17,6 +17,12 @@ import { createAdvancedTools } from "./advanced-tools";
 import { sanitizeExternalContent } from "./security/sanitize";
 import { classifyCommand, makeCommandPolicy } from "./security/safe-command";
 
+import * as os from "node:os";
+
+// Nombre de threads CPU optimal : la moitie des cœurs logiques (cœurs physiques
+// sur la plupart des CPU). Plus de threads = contention et ralentissement.
+const CPU_THREADS = Math.max(1, Math.floor(os.cpus().length / 2));
+
 export interface AgentOptions {
   settings: Settings;
   tools?: ToolRegistry;
@@ -125,7 +131,7 @@ export class Agent {
           // en préfill sur CPU pour les prompts courts).
           num_ctx: 4096,
           // Threads physiques : plus de threads que de cœurs ralentit le CPU.
-          num_thread: 4,
+          num_thread: CPU_THREADS,
           tools: toolDefs.length
             ? toolDefs.map((t) => ({
                 type: "function",
