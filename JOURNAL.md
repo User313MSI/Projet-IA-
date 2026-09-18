@@ -310,7 +310,61 @@
 
 ### État
 - PROMPT_DESIGN.md poussé sur GitHub ✅
-- En attente d'implémentation des améliorations
+- Brain3D amélioré (vaisseaux, hover, bulles) ✅
+- Préchauffage modèle Ollama ✅
+- Raccourci bureau + launch.cjs ✅
+- Indicateur "Origin réfléchit" ✅
+- Tests : 97/97 verts (71 agent-core + 14 personality + 12 knowledge)
+- Typecheck : OK sur agent-core + web
+- Build : OK (page /origin 6.74 kB, 109 kB First Load JS)
+
+### Détail des fichiers modifiés (cette session)
+
+#### `apps/web/components/origin/Brain3D.tsx`
+- **Vaisseaux sanguins** : 8 courbes organiques (artères vertes / veines rouges) générées par `createVesselPath()` avec bruit 3D, pulsation animée
+- **Effet hover** : raycaster sur le cerveau → lueur locale cyan sous la souris via uniform `uHoverPos` + `uHoverActive` dans le shader, + anneau 2D animé au point de survol
+- **Bulles de pensée** : composant `ThoughtBubble` affichant les questions en attente (`pendingQuestionsList`), couleurs par catégorie, animation pulse + float, disparition auto après 5s
+- **Indicateur questions** : pastille rouge pulsante en haut à droite avec le nombre de questions en attente
+- **Double-clic** : réinitialise la vue (rotation + zoom)
+- **Effet respiration** : scale sinusoïdal ±1.5% du brainGroup
+- **Particules** : 500 particules colorées (4 couleurs thème) avec `vertexColors: true`
+- **Bruit 5 octaves** : détail anatomique plus fin (sulci/gyri)
+- **Lumière directionnelle** : plus de profondeur
+- Cleanup GPU complet (vaisseaux, particules)
+
+#### `apps/web/app/api/chat/route.ts`
+- **Préchauffage modèle** (`warmModel()`) : appel `/api/generate` avec `keep_alive: "30m"` et prompt vide → le modèle reste chargé en RAM Ollama → premier token beaucoup plus rapide (évite 5-15s de chargement). Cache par nom de modèle (`Set`), non bloquant (`void`)
+
+#### `apps/web/components/ChatView.tsx`
+- **Indicateur "Origin réfléchit..."** : texte pulsant (animation `pulseText`) à côté des points de chargement pendant le streaming → l'utilisateur sait qu'Origin est en train de générer
+
+#### `packages/agent-core/src/ollama.ts`
+- Clarification du commentaire de préchauffage (sans changement de comportement)
+
+#### `scripts/launch.cjs` **NOUVEAU**
+- Script de lancement complet : git pull (auto-update), pnpm install, build packages, vérification Ollama (lancement si absent), lancement Next.js + Electron
+- Mode `--dev` (Next dev + Electron) et `--prod` (next start)
+- Bannière ASCII NEXUS + logs colorés
+
+#### `lancer-nexus.bat` **RÉÉCRIT**
+- Mise à jour auto (git pull), vérification pnpm, lancement Ollama si absent, puis `node scripts/launch.cjs --dev`
+- Bannière ASCII + codes couleurs
+
+#### `creer-raccourci.ps1` **RÉÉCRIT**
+- Création raccourci bureau + menu Démarrer, params personnalisables (`-Nom`, `-Cible`, `-Icone`), messages colorés, aide intégrée
+
+#### `PROMPT_DESIGN.md` **RÉÉCRIT**
+- Répartition claire des tâches : Vibe Code = code technique/fonctionnel, Agent Design = visuel uniquement
+- Section coordination obligatoire : git pull avant/durante travail, JOURNAL.md partagé, ne pas toucher aux fichiers en cours
+- Phases : textures/matériaux, éclairage, post-processing, UI/UX, particules
+
+### Commits de cette session
+- `1cfc6ff` — feat(design): création PROMPT_DESIGN.md
+- `65bba91` — chore(agent): Vibe Code — enregistrement agent design
+- `67c73ee` — feat(design): PROMPT_DESIGN.md avec coordination parallèle
+- `36a5f7e` — feat(desktop): scripts lancement auto-update + raccourci
+- `4fe5c84` — feat(origin): Brain3D amélioré + préchauffage Ollama
+- `cf42c50` — feat(ui): indicateur "Origin réfléchit"
 
 ---
 
