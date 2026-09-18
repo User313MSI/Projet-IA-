@@ -65,7 +65,8 @@ function createVesselPath(
   for (let i = 0; i <= segments; i++) {
     const t = i / segments;
     const theta = (t * Math.PI * 2 + seed * 137) % (Math.PI * 2);
-    const phi = Math.acos(2 * ((t + seed * 0.37) % 2) - 1);
+    const phiRaw = 2 * ((t + seed * 0.37) % 2) - 1;
+    const phi = Math.acos(Math.max(-1, Math.min(1, phiRaw)));
     const radius = brainRadius * (0.7 + Math.sin(t * Math.PI * 2 + seed) * 0.2);
     
     // Ajout de variations pour un trajet plus organique
@@ -196,8 +197,6 @@ export default function Brain3D({
   const mountRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [thoughtBubbles, setThoughtBubbles] = useState<string[]>([]);
-  const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
-  const [hoverActive, setHoverActive] = useState(false);
 
   // Position des bulles de pensée : répartition autour du cerveau
   const getBubblePosition = (index: number) => {
@@ -210,13 +209,20 @@ export default function Brain3D({
     };
   };
 
+  const pendingListRef = useRef(pendingQuestionsList);
   useEffect(() => {
-    // Mettre à jour les bulles de pensée quand pendingQuestionsList change
-    if (pendingQuestionsList.length > 0) {
-      setThoughtBubbles(pendingQuestionsList.slice(0, 5));
-    } else {
-      setThoughtBubbles([]);
-    }
+    pendingListRef.current = pendingQuestionsList;
+  }, [pendingQuestionsList]);
+
+  useEffect(() => {
+    // Mettre à jour les bulles de pensée uniquement si le contenu a réellement changé
+    setThoughtBubbles((prev) => {
+      const next = pendingQuestionsList.slice(0, 5);
+      if (prev.length === next.length && prev.every((q, i) => q === next[i])) {
+        return prev;
+      }
+      return next;
+    });
   }, [pendingQuestionsList]);
 
   useEffect(() => {
@@ -341,10 +347,6 @@ export default function Brain3D({
           varying vec3 vNormal;
           varying vec3 vPos;
           varying vec3 vWorldPos;
-          
-          uniform mat4 modelMatrix;
-          uniform mat4 viewMatrix;
-          uniform mat4 projectionMatrix;
           
           void main() {
             vDeform = aDeform;
@@ -645,13 +647,12 @@ export default function Brain3D({
         
         if (intersects.length > 0) {
           const point = intersects[0]!.point;
-          setHoverPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-          setHoverActive(true);
           (brainMat.uniforms.uHoverPos as THREE.Uniform).value = point;
           (brainMat.uniforms.uHoverActive as THREE.Uniform).value = 1;
+          renderer.domElement.style.cursor = "pointer";
         } else {
-          setHoverActive(false);
           (brainMat.uniforms.uHoverActive as THREE.Uniform).value = 0;
+          renderer.domElement.style.cursor = "grab";
         }
       }
       
@@ -874,22 +875,6 @@ export default function Brain3D({
             }
           `}</style>
         </div>
-      )}
-      
-      {/* Effet hover visuel : halo qui suit la souris */}
-      {hoverActive && hoverPosition && (
-        <div style={{
-          position: "absolute",
-          left: hoverPosition.x - 24,
-          top: hoverPosition.y - 24,
-          width: "48px",
-          height: "48px",
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(0,229,255,0.35) 0%, rgba(124,77,255,0.15) 40%, transparent 70%)",
-          border: "1px solid rgba(0,229,255,0.25)",
-          pointerEvents: "none",
-          zIndex: 5,
-        }} />
       )}
       
       {error && (
