@@ -1,4 +1,5 @@
 import { DEFAULT_EMBEDDING_MODEL } from "./types";
+import { embeddingCache, EmbeddingCache } from "./embedding-cache";
 
 export interface EmbeddingResponse {
   embedding: number[];
@@ -22,6 +23,10 @@ export class EmbeddingClient {
   }
 
   async embed(text: string): Promise<number[]> {
+    const cacheKey = EmbeddingCache.hashKey(text);
+    const cached = embeddingCache.get(cacheKey);
+    if (cached) return cached;
+
     const res = await fetch(`${this.baseUrl}/api/embeddings`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -35,16 +40,12 @@ export class EmbeddingClient {
     if (!data.embedding || !Array.isArray(data.embedding)) {
       throw new Error("Réponse embedding invalide");
     }
+    embeddingCache.set(cacheKey, data.embedding);
     return data.embedding;
   }
 
   async embedBatch(texts: string[]): Promise<number[][]> {
-    const results: number[][] = [];
-    for (const text of texts) {
-      const emb = await this.embed(text);
-      results.push(emb);
-    }
-    return results;
+    return Promise.all(texts.map((t) => this.embed(t)));
   }
 
   async isReachable(): Promise<boolean> {

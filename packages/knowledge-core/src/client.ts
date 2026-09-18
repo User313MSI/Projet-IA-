@@ -14,3 +14,4 @@ export {
 } from "./types";
 export { chunkText, estimateTokens, parseMarkdown, detectType } from "./chunking";
 export { cosineSimilarity, search, computeStats, formatContext } from "./vector";
+export { EmbeddingCache } from "./embedding-cache";

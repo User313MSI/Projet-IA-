@@ -23,14 +23,7 @@ export interface AgentOptions {
   cwd?: string;
   maxSteps?: number;
   onEvent?: (event: AgentStreamEvent) => void;
-  /** Mode power user (commandes hors allowlist avec approbation). */
   powerUser?: boolean;
-  /**
-   * Handler d'approbation pour les actions sensibles. Quand un outil demande
-   * une approbation, l'agent émet un événement `approval_required` (pour que
-   * l'UI affiche une carte), puis attend la résolution via ce handler.
-   * Si absent → toute action sensible est refusée.
-   */
   approve?: (call: ToolCall) => Promise<boolean>;
 }
 
@@ -49,8 +42,6 @@ function buildOllamaMessages(
         m.parts?.find((p) => p.type === "tool_result")?.toolResult;
       let content: string;
       if (result) {
-        // Les résultats des outils externes (web, météo) sont assainis avant
-        // réinjection dans le contexte du LLM (atténuation prompt injection).
         const raw = JSON.stringify({
           ok: result.ok,
           output: result.output,
@@ -129,7 +120,7 @@ export class Agent {
           temperature: settings.temperature,
           top_p: settings.topP,
           num_predict: settings.maxTokens,
-          num_ctx: 4096,
+          num_ctx: 8192,
           num_thread: 8,
           tools: toolDefs.length
             ? toolDefs.map((t) => ({
@@ -197,30 +188,32 @@ export class Agent {
       workingHistory.push(assistantMsg);
       yield emit({ type: "token", token: "" });
 
-      for (const tc of toolCalls) {
-        const call: ToolCall = {
-          id: uid("call"),
-          name: tc.function.name,
-          arguments: tc.function.arguments,
-        };
-        yield emit({ type: "tool_call", toolCall: call });
+      const toolResults = await Promise.all(
+        toolCalls.map(async (tc) => {
+          const call: ToolCall = {
+            id: uid("call"),
+            name: tc.function.name,
+            arguments: tc.function.arguments,
+          };
+          emit({ type: "tool_call", toolCall: call });
 
-        // Notifier l'UI avant l'évaluation de l'approbation : si l'outil va
-        // demander une approbation, on émet approval_required (le handler
-        // `approve` est responsable d'émettre l'événement et d'attendre la
-        // réponse client via /api/approve).
-        const willRequestApproval = await this.toolNeedsApproval(call);
-        if (willRequestApproval) {
-          yield emit({
-            type: "approval_required",
-            approvalId: call.id,
-            toolCall: call,
-            reason: approvalReason(call),
-          });
-        }
+          const willRequestApproval = await this.toolNeedsApproval(call);
+          if (willRequestApproval) {
+            emit({
+              type: "approval_required",
+              approvalId: call.id,
+              toolCall: call,
+              reason: approvalReason(call),
+            });
+          }
 
-        const result: ToolResult = await this.tools.execute(call, this.ctx);
-        yield emit({ type: "tool_result", toolResult: result });
+          const result: ToolResult = await this.tools.execute(call, this.ctx);
+          emit({ type: "tool_result", toolResult: result });
+          return { call, result };
+        })
+      );
+
+      for (const { call, result } of toolResults) {
         workingHistory.push({
           id: uid("msg"),
           role: "tool",
@@ -233,14 +226,10 @@ export class Agent {
 
     yield emit({
       type: "error",
-      message: `Limite de ${this.maxSteps} étapes atteinte sans réponse finale.`,
+      message: `Limite de ${this.maxSteps} etapes atteinte sans reponse finale.`,
     });
   }
 
-  /**
-   * Détermine si un appel d'outil va déclencher une demande d'approbation,
-   * afin d'émettre l'événement `approval_required` avant l'exécution.
-   */
   async toolNeedsApproval(call: ToolCall): Promise<boolean> {
     if (!this.opts.approve) return false;
     if (call.name === "write_file") return true;
@@ -254,7 +243,7 @@ export class Agent {
 }
 
 function approvalReason(call: ToolCall): string {
-  if (call.name === "write_file") return "écriture de fichier";
+  if (call.name === "write_file") return "ecriture de fichier";
   if (call.name === "run_command") return "commande hors allowlist (mode power user)";
   return "action sensible";
 }

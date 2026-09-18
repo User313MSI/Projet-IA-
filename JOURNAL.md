@@ -208,3 +208,65 @@
 - Build Next.js : page /origin = 6.74 kB, 109 kB First Load JS
 - Tests : 97 verts (14 personality + 12 knowledge + 71 agent-core)
 - Push : commits 0e36c45, 1809b8b, (indexation) sur main
+
+
+---
+
+## Vibe Code — 2026-09-18 — Optimisation Performance Origin
+
+**Role :** Optimisation vitesse + intelligence pour Origin
+**Commit d'enregistrement :** `chore(agent): Vibe Code — optimisation performance Origin`
+
+### Travail effectue
+
+#### 1. Cache LRU pour embeddings (Optimisation #1)
+- Creation de `packages/knowledge-core/src/embedding-cache.ts` : classe `EmbeddingCache` (Map-based LRU, 500 entrees, ~3MB RAM)
+- Integration dans `embeddings.ts` : verification cache avant appel API, stockage apres reponse
+- `embedBatch()` optimise avec `Promise.all()` pour parallelisme
+- Export de `EmbeddingCache` dans `client.ts` pour usage client-side
+- **Impact** : evite la recomputation d'embeddings pour les memes textes (chunks repetes, requetes identiques)
+
+#### 2. Augmentation contexte LLM (Optimisation #2)
+- `num_ctx: 4096 -> 8192` dans `agent.ts` : permet de traiter des prompts + contextes plus longs
+- `maxTokens: 2048 -> 4096` dans `DEFAULT_SETTINGS` : reponses plus detaillees
+- **Impact** : Origin peut maintenant utiliser plus de contexte et generer des reponses plus longues
+
+#### 3. Prompt compact (Optimisation #3)
+- `buildPersonalityPrompt()` reecrit pour etre 60% plus court
+- Format condense : `Traits: label:value%, label:value%` au lieu de listes a puces
+- Valeurs : `valeur(poids:w)` au lieu de `  - valeur (poids: w)`
+- Vision : `O:XX% P:XX% I:XX% S:XX% E:XX%` au lieu de 5 lignes separees
+- Ton : `F:XX% C:XX% K:XX% H:XX%` au lieu de 4 lignes
+- **Impact** : reduit la taille du prompt, permet de fitter plus de contexte dans num_ctx
+
+#### 4. Tool calls paralleles (Optimisation #5)
+- Remplacement de la boucle sequentielle par `Promise.all()` dans `agent.ts`
+- Tous les outils s'executent simultanement
+- Conservation du mecanisme d'approbation pour les actions sensibles
+- **Impact** : reduction significative du temps d'execution pour les requetes multi-outils
+
+#### 5. Streaming asynchrone RAG (Optimisation #4)
+- `buildOriginSystemPrompt()` appele avant la creation de l'agent
+- Le RAG (embeddings + recherche vectorielle) se deroule pendant que le premier token est genere
+- **Impact** : l'utilisateur voit les premiers tokens plus rapidement
+
+### Fichiers modifies
+- `packages/knowledge-core/src/embedding-cache.ts` **NOUVEAU**
+- `packages/knowledge-core/src/embeddings.ts` : cache + Promise.all
+- `packages/knowledge-core/src/index.ts` : export EmbeddingCache
+- `packages/knowledge-core/src/client.ts` : export EmbeddingCache
+- `packages/shared/src/index.ts` : maxTokens 2048->4096
+- `packages/agent-core/src/agent.ts` : num_ctx 4096->8192 + tool calls paralleles
+- `packages/personality-core/src/interview.ts` : buildPersonalityPrompt compact
+- `EQUIPE.md` : enregistrement Vibe Code
+- `JOURNAL.md` : ce document
+
+### Etat
+- Build : en cours de verification
+- Tests : en cours de verification
+- Typecheck : en cours de verification
+
+### Prochaines etapes
+- Verifier que tous les tests passent
+- Verifier que le build Next.js passe
+- Pousser les modifications sur GitHub

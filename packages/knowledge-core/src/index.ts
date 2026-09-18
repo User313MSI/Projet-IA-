@@ -15,6 +15,7 @@ export {
 } from "./types";
 
 export { EmbeddingClient } from "./embeddings";
+export { embeddingCache, EmbeddingCache } from "./embedding-cache";
 export {
   chunkText,
   estimateTokens,

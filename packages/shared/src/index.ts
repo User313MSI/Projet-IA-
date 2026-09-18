@@ -76,7 +76,7 @@ export const DEFAULT_SETTINGS: Settings = {
   model: "qwen2.5:14b",
   temperature: 0.6,
   topP: 0.85,
-  maxTokens: 2048,
+  maxTokens: 4096,
   systemPrompt:
     "Tu es NEXUS, un assistant IA local autonome. Tu réponds en français, de manière claire, directe et concise. Tu réfléchis étape par étape uniquement quand c'est nécessaire. Tu utilises les outils disponibles quand ils t'aident à répondre. Sois rapide et utile.",
   ollamaUrl: "http://127.0.0.1:11434",
