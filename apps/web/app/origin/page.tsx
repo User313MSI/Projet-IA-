@@ -182,8 +182,20 @@ export default function OriginPage() {
 
   if (!personality) {
     return (
-      <div style={{ display: "grid", placeItems: "center", height: "100vh", color: "var(--text-mute)" }}>
-        Chargement d'Origin...
+      <div style={{ display: "grid", placeItems: "center", height: "100vh", background: "radial-gradient(ellipse at center, #0a0a2e 0%, #05060f 70%)", color: "var(--text)" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: "50%",
+            border: "3px solid rgba(124,77,255,0.2)",
+            borderTopColor: "#7c4dff",
+            animation: "spin 1s linear infinite",
+            margin: "0 auto 20px",
+          }} />
+          <p style={{ fontSize: "15px", fontWeight: 600, letterSpacing: "2px", textTransform: "uppercase", background: "linear-gradient(135deg, #7c4dff, #00e5ff)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            Initialisation d’Origin…
+          </p>
+          <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+        </div>
       </div>
     );
   }
@@ -198,37 +210,61 @@ export default function OriginPage() {
         gap: "20px",
         flexWrap: "wrap",
       }}>
-        <a href="/" style={{ color: "var(--text-mute)", textDecoration: "none", fontSize: "14px" }}>← Retour</a>
-        <h1 style={{ fontSize: "24px", fontWeight: 700, margin: 0 }}>
-          <span style={{ background: "linear-gradient(135deg, #7c4dff, #00e5ff)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+        <a href="/" style={{ color: "var(--text-mute)", textDecoration: "none", fontSize: "14px", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+          ← Retour
+        </a>
+        <h1 style={{ fontSize: "26px", fontWeight: 800, margin: 0, letterSpacing: "-0.5px" }}>
+          <span style={{ background: "linear-gradient(135deg, #7c4dff, #00e5ff, #00ff9d)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", filter: "drop-shadow(0 0 20px rgba(124,77,255,0.3))" }}>
             Origin
           </span>
-          <span style={{ color: "var(--text-mute)", fontSize: "14px", marginLeft: "12px" }}>
+          <span style={{ color: "var(--text-mute)", fontSize: "13px", marginLeft: "12px", fontWeight: 400 }}>
             {personality.identity.tagline}
           </span>
         </h1>
-        <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
-          {(["brain", "interview", "personality", "knowledge"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                padding: "8px 16px",
-                borderRadius: "8px",
-                border: "1px solid",
-                borderColor: activeTab === tab ? "var(--accent)" : "var(--border)",
-                background: activeTab === tab ? "rgba(124,77,255,0.15)" : "transparent",
-                color: activeTab === tab ? "var(--accent)" : "var(--text-mute)",
-                cursor: "pointer",
-                fontSize: "13px",
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "1px",
-              }}
-            >
-              {tab === "brain" ? "Cerveau" : tab === "interview" ? `Interview (${pending.length})` : tab === "personality" ? "Personnalité" : "Connaissances"}
-            </button>
-          ))}
+        <div style={{ marginLeft: "auto", display: "flex", gap: "6px", flexWrap: "wrap" }} role="tablist" aria-label="Sections d'Origin">
+          {(["brain", "interview", "personality", "knowledge"] as const).map((tab) => {
+            const labels: Record<string, { icon: string; text: string; badge?: number; color: string }> = {
+              brain: { icon: "🧠", text: "Cerveau", color: "#7c4dff" },
+              interview: { icon: "💬", text: "Interview", badge: pending.length, color: "#00e5ff" },
+              personality: { icon: "✨", text: "Personnalité", color: "#ff6b9d" },
+              knowledge: { icon: "📚", text: "Connaissances", color: "#00ff9d" },
+            };
+            const meta = labels[tab]!;
+            const active = activeTab === tab;
+            return (
+              <button
+                key={tab}
+                role="tab"
+                aria-selected={active}
+                aria-label={meta.text}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  padding: "9px 16px",
+                  borderRadius: "10px",
+                  border: "1px solid",
+                  borderColor: active ? meta.color : "var(--border)",
+                  background: active ? `${meta.color}1a` : "transparent",
+                  color: active ? meta.color : "var(--text-mute)",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.8px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "7px",
+                  transition: "all 0.2s",
+                  boxShadow: active ? `0 0 16px ${meta.color}33` : "none",
+                }}
+              >
+                <span style={{ fontSize: "15px" }}>{meta.icon}</span>
+                {meta.text}
+                {meta.badge ? (
+                  <span style={{ background: "#ff6b9d", color: "#fff", fontSize: "10px", fontWeight: 800, padding: "1px 6px", borderRadius: "10px", marginLeft: "2px" }}>{meta.badge}</span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
       </div>
 
