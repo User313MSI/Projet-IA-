@@ -178,3 +178,33 @@
 - L'utilisateur accède au cerveau numérique depuis l'app principale
 
 **Tests : 97 verts** (14 personality + 12 knowledge + 71 agent-core)
+
+### Montée en gamme visuelle & technique — 2026-09-18
+
+**Phase A — Cerveau 3D réécrit (Brain3D.tsx)**
+- Cerveau anatomique : icosaèdre subdivisé (niveau 4) déformé par bruit 3D multicouche (sulci/gyri réalistes)
+- Shader GLSL custom : gradient selon profondeur (sulci sombres / gyri lumineux), onde de "pensée" qui parcourt le cerveau, fresnel sur les bords, clignotement d'alerte quand questions en attente
+- 4 sources de lumière cinématique (key/fill/rim/accent) + tone mapping ACESFilmic + fog exponentiel
+- Coquille wireframe externe (halo) + sphère interne pulsante
+- Neurones catégorisés par couleur (6 catégories), synapses assorties par couleur
+- Impulsions lumineuses qui voyagent le long des synapses (interpolation lerpVectors)
+- Contrôles orbit : drag (pointer events) + zoom molette + rotation auto après 2.5s d'inactivité
+- Cleanup complet des ressources GPU (dispose de tous les géométries/matériaux)
+- 350 étoiles flottantes en arrière-plan
+
+**Phase B — Page /origin redessinée**
+- Onglets avec icônes, couleurs par section, badges de compteur, rôles ARIA (tablist/tab/aria-selected)
+- Loading state animé : spinner + gradient textuel au lieu du texte simple
+- StatCard redessiné : gradient de fond, barre colorée en haut, hover animé (translateY + glow), text-shadow
+- Feedback d'indexation animé : spinner + barre de progression indéterminée (slide) + message contextuel coloré
+
+**Phase C — Accessibilité globale**
+- `*:focus-visible` avec outline accent (navigation clavier visible)
+- `@media (prefers-reduced-motion: reduce)` désactive les animations
+- `::selection` custom avec couleur du thème
+- Boutons/liens/inputs avec focus visible explicite
+
+**Vérifications**
+- Build Next.js : page /origin = 6.74 kB, 109 kB First Load JS
+- Tests : 97 verts (14 personality + 12 knowledge + 71 agent-core)
+- Push : commits 0e36c45, 1809b8b, (indexation) sur main

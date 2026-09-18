@@ -596,19 +596,26 @@ export default function OriginPage() {
                 {indexing ? "Indexation en cours..." : "Indexer dans le cerveau"}
               </button>
               {indexing && (
-                <div style={{ marginTop: "12px" }}>
-                  <div style={{ height: "6px", borderRadius: "3px", background: "var(--bg-3)", overflow: "hidden" }}>
+                <div style={{ marginTop: "14px", padding: "16px", borderRadius: "10px", background: "rgba(0,229,255,0.06)", border: "1px solid rgba(0,229,255,0.2)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                    <div style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid rgba(0,229,255,0.25)", borderTopColor: "#00e5ff", animation: "origin-spin 0.8s linear infinite" }} />
+                    <span style={{ fontSize: "13px", fontWeight: 600, color: "#00e5ff" }}>{indexStatus || "Indexation en cours…"}</span>
+                  </div>
+                  <div style={{ height: "5px", borderRadius: "3px", background: "var(--bg-3)", overflow: "hidden", position: "relative" }}>
                     <div style={{
-                      width: "100%",
+                      position: "absolute",
+                      width: "40%",
                       height: "100%",
+                      borderRadius: "3px",
                       background: "linear-gradient(90deg, #00e5ff, #00ff9d)",
-                      animation: "pulse-glow 1.5s ease-in-out infinite",
+                      animation: "origin-slide 1.4s ease-in-out infinite",
                     }} />
                   </div>
+                  <style>{`@keyframes origin-spin { to { transform: rotate(360deg) } } @keyframes origin-slide { 0% { left: -40% } 100% { left: 100% } }`}</style>
                 </div>
               )}
-              {indexStatus && (
-                <p style={{ marginTop: "10px", fontSize: "13px", color: "var(--text-mute)" }}>{indexStatus}</p>
+              {indexStatus && !indexing && (
+                <p style={{ marginTop: "10px", fontSize: "13px", color: indexStatus.startsWith("Erreur") ? "#ff4444" : "#00ff9d" }}>{indexStatus}</p>
               )}
             </div>
 
