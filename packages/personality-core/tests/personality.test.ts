@@ -100,7 +100,7 @@ describe("buildPersonalityPrompt", () => {
     const q = createDefaultQuestions();
     const prompt = buildPersonalityPrompt(p, q);
     expect(prompt).toContain("Origin");
-    expect(prompt).toContain("français");
+    expect(prompt).toContain("Reponds en francais");
   });
 
   it("mentionne les questions en attente", () => {

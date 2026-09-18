@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { Agent, memory } from "@ia-app/agent-core";
 import { originStore } from "@ia-app/personality-core";
-import { buildPersonalityPrompt } from "@ia-app/personality-core";
+import { buildPersonalityPrompt } from "@ia-app/personality-core/client";
 import { knowledgeStore } from "@ia-app/knowledge-core";
 import type { ChatMessage, AgentStreamEvent, Settings } from "@ia-app/shared";
 import { uid } from "@ia-app/shared";
