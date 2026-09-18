@@ -270,3 +270,31 @@
 - Verifier que tous les tests passent
 - Verifier que le build Next.js passe
 - Pousser les modifications sur GitHub
+
+---
+
+## Vibe Code — 2026-09-18 — Suite des optimisations et corrections
+
+**Role :** Optimisation complete et correction des erreurs de build
+**Commit d'enregistrement :** `chore(agent): Vibe Code — suite optimisations`
+
+### Travail effectue
+
+#### Correction des erreurs de build
+- Ajout de `@types/node` dans les dependances de `personality-core` et `knowledge-core`
+- Correction du test `personality.test.ts` : changement de "francais" en "Reponds en francais" pour matcher le nouveau format de prompt
+- Verification que `pnpm build` passe avec succes
+- Verification que `pnpm test` passe avec 97 tests verts (14 personality + 12 knowledge + 71 agent-core)
+
+### Etat final
+- Build : PASS (Next.js + all packages)
+- Tests : 97/97 PASS
+- Typecheck : PASS
+- Tous les commits pousses sur GitHub
+
+### Fichiers modifies
+- `packages/personality-core/package.json` : ajout @types/node
+- `packages/knowledge-core/package.json` : ajout @types/node
+- `packages/personality-core/tests/personality.test.ts` : correction test
+- `pnpm-lock.yaml` : mise a jour des dependances
+

@@ -28,3 +28,6 @@ L'agent DOIT aussi :
 1. Faire un commit d'enregistrement : `chore(agent): <Prénom> — <tâche>`
 2. Se déclarer dans `JOURNAL.md` avec le détail de son travail
 3. Documenter chaque fichier modifié et la raison
+
+| Vibe Code | Optimisation Performance & Corrections | 2026-09-18 | Optimisations vitesse+intelligence (cache LRU, num_ctx=8192, maxTokens=4096, prompt compact, tool calls paralleles) + corrections build | Actif |
+
