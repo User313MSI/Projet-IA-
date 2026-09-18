@@ -2,7 +2,7 @@
   "name": "@ia-app/desktop",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
+  "type": "commonjs",
   "main": "dist/main.js",
   "scripts": {
     "dev": "tsc -p tsconfig.json && node scripts/dev.cjs",
