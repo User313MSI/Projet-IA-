@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "dist/main.cjs",
+  "main": "dist/main.js",
   "scripts": {
-    "dev": "node scripts/dev.cjs",
-    "build": "node scripts/build.cjs",
+    "dev": "tsc -p tsconfig.json && node scripts/dev.cjs",
+    "build": "tsc -p tsconfig.json && node scripts/build.cjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "echo \"desktop lint ok\" && exit 0",
     "test": "echo \"no desktop tests\" && exit 0"

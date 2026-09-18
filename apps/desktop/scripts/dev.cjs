@@ -28,7 +28,7 @@ function startElectron() {
   );
   const electron = spawn(
     electronBin,
-    [path.join(desktopDir, "src", "main.ts")],
+    [path.join(desktopDir, "dist", "main.js")],
     { cwd: desktopDir, stdio: "inherit", shell: true }
   );
   electron.on("close", () => process.exit(0));
@@ -37,6 +37,9 @@ function startElectron() {
 
 console.log("[desktop:dev] Build d'agent-core et shared...");
 spawnSync("npx", ["pnpm", "build"], { cwd: root, stdio: "inherit", shell: true });
+
+console.log("[desktop:dev] Compilation TypeScript pour Electron...");
+spawnSync("npx", ["tsc", "-p", "tsconfig.json"], { cwd: path.join(root, "apps", "desktop"), stdio: "inherit", shell: true });
 
 console.log("[desktop:dev] Démarrage de Next.js...");
 const nextProc = startNextDev();
