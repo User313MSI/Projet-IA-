@@ -7,7 +7,7 @@ import type {
   Personality,
   InterviewQuestion,
   PersonalityCategory,
-} from "@ia-app/personality-core/src/types";
+} from "@ia-app/personality-core/client";
 import {
   CATEGORY_LABELS,
   CATEGORY_COLORS,
@@ -16,8 +16,8 @@ import {
   interviewProgress,
   nextPendingQuestion,
   pendingQuestionsByCategory,
-} from "@ia-app/personality-core/src/interview";
-import type { Document, KnowledgeStats } from "@ia-app/knowledge-core/src/types";
+} from "@ia-app/personality-core/client";
+import type { Document, KnowledgeStats } from "@ia-app/knowledge-core/client";
 
 const Brain3D = dynamic(() => import("../../components/origin/Brain3D"), {
   ssr: false,
