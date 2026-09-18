@@ -72,6 +72,44 @@ function isExternalTool(name: string): boolean {
   return name === "web_search" || name === "weather";
 }
 
+/**
+ * Descriptions d'outils compactes pour le mode rapide : sur CPU, l'évaluation
+ * du prompt tourne à ~40 tok/s, et les définitions complètes des 9 outils
+ * (~700 tokens) coûtent ~18s à chaque message. Ces versions courtes gardent
+ * les mêmes noms/schémas de paramètres (le modèle appelle correctement)
+ * mais réduisent la description à une ligne.
+ */
+const FAST_TOOL_DESCRIPTIONS: Record<string, string> = {
+  read_file: "Lit un fichier.",
+  write_file: "Écrit un fichier.",
+  list_dir: "Liste un répertoire.",
+  run_command: "Exécute une commande allowlistée.",
+  calc: "Calcule une expression mathématique.",
+  system_info: "Infos système (RAM, CPU).",
+  weather: "Météo d'une ville.",
+  web_search: "Recherche sur le web.",
+  schedule_reminder: "Programme un rappel.",
+  file_search: "Cherche des fichiers par nom.",
+};
+
+/**
+ * Limite l'historique aux derniers messages pour contenir le coût de
+ * réévaluation du prompt (le préfixe complet est réévalué à chaque tour
+ * quand le contexte RAG change). Les messages tool (résultats d'outils)
+ * restent collés à leur appel pour ne pas casser la boucle d'agent.
+ */
+const HISTORY_LIMIT = 12;
+
+function limitHistory(history: ChatMessage[]): ChatMessage[] {
+  if (history.length <= HISTORY_LIMIT) return history;
+  const recent = history.slice(-HISTORY_LIMIT);
+  // Garde les messages tool de tête collés à leur assistant correspondant.
+  while (recent.length > 0 && recent[0]!.role === "tool") {
+    recent.shift();
+  }
+  return recent;
+}
+
 export class Agent {
   private ollama: OllamaClient;
   private tools: ToolRegistry;
@@ -108,8 +146,9 @@ export class Agent {
     };
 
     const toolDefs = this.tools.definitions();
+    const fastMode = settings.fastMode ?? true;
     let step = 0;
-    const workingHistory = [...history];
+    const workingHistory = [...(fastMode ? limitHistory(history) : history)];
 
     while (step < this.maxSteps) {
       step++;
@@ -137,7 +176,9 @@ export class Agent {
                 type: "function",
                 function: {
                   name: t.name,
-                  description: t.description,
+                  description: fastMode
+                    ? (FAST_TOOL_DESCRIPTIONS[t.name] ?? t.description)
+                    : t.description,
                   parameters: t.parameters,
                 },
               }))

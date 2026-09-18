@@ -40,6 +40,8 @@ export async function POST(req: NextRequest) {
   }
   // powerUser est un booléen explicite (défaut false si non fourni).
   next.powerUser = body.powerUser === true;
+  // fastMode est un booléen explicite (défaut true si non fourni).
+  next.fastMode = body.fastMode !== false;
   await memory.saveSettings(next);
   return NextResponse.json({ ok: true, settings: next });
 }

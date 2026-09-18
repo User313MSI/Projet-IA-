@@ -9,30 +9,17 @@ import { guard, readJsonBody } from "../../../lib/auth";
 import { makeApprovalHandler, clearConversationApprovals } from "../../../lib/approvals";
 
 /**
- * Construit le prompt système d'Origin : personnalité (interview) + contexte
- * de la base de connaissances (RAG). Côté serveur uniquement (utilise node:fs
- * via les stores). Si Origin n'est pas encore configurée, on garde le prompt
- * par défaut des settings.
+ * Construit le prompt système d'Origin : personnalité (interview).
+ * Côté serveur uniquement (utilise node:fs via les stores). Si Origin n'est
+ * pas encore configurée, on garde le prompt par défaut des settings.
+ * IMPORTANT STABILITÉ : le contexte RAG n'est PAS inclus ici. Le prompt système
+ * doit rester identique d'un message à l'autre pour qu'Ollama réutilise son
+ * cache de préfixe KV (sur CPU, réévaluer le préfixe à chaque tour coûte
+ * plusieurs secondes). Le contexte RAG est injecté dans le message utilisateur.
  */
-async function buildOriginSystemPrompt(
-  basePrompt: string,
-  userMessage: string
-): Promise<string> {
-  const cacheKey = userMessage.slice(0, 200);
-  const cached = promptCache.get(cacheKey);
+async function buildOriginSystemPrompt(basePrompt: string): Promise<string> {
+  const cached = promptCache.get(basePrompt);
   if (cached) return cached;
-  const built = await buildOriginSystemPromptUncached(basePrompt, userMessage);
-  if (promptCache.size >= PROMPT_CACHE_MAX) {
-    promptCache.delete(promptCache.keys().next().value ?? "");
-  }
-  promptCache.set(cacheKey, built);
-  return built;
-}
-
-async function buildOriginSystemPromptUncached(
-  basePrompt: string,
-  userMessage: string
-): Promise<string> {
   let prompt = basePrompt;
   try {
     const personality = await originStore.loadPersonality();
@@ -43,22 +30,30 @@ async function buildOriginSystemPromptUncached(
   } catch {
     // Origin non configurée → on garde le prompt par défaut.
   }
-  // RAG : recherche dans la base de connaissances et injection du contexte.
+  if (promptCache.size >= PROMPT_CACHE_MAX) {
+    promptCache.delete(promptCache.keys().next().value ?? "");
+  }
+  promptCache.set(basePrompt, prompt);
+  return prompt;
+}
+
+/**
+ * RAG : recherche dans la base de connaissances et injection du contexte
+ * dans le message utilisateur (et non le prompt système) pour préserver le
+ * cache de préfixe d'Ollama.
+ */
+async function buildRagContext(userMessage: string): Promise<string> {
   try {
     const reachable = await knowledgeStore.isEmbeddingReachable();
-    if (reachable) {
-      const stats = await knowledgeStore.getStats();
-      if (stats && stats.totalChunks > 0) {
-        const { context } = await knowledgeStore.queryWithContext(userMessage, 5);
-        if (context) {
-          prompt += `\n\n## Contexte de ta base de connaissances\nVoici des extraits pertinents issus des documents que ton créateur t'a donnés. Utilise-les pour enrichir ta réponse, et cite la source quand c'est pertinent :\n\n${context}`;
-        }
-      }
-    }
+    if (!reachable) return "";
+    const stats = await knowledgeStore.getStats();
+    if (!stats || stats.totalChunks === 0) return "";
+    const { context } = await knowledgeStore.queryWithContext(userMessage, 5);
+    return context ?? "";
   } catch {
     // Base de connaissances indisponible → on continue sans contexte RAG.
+    return "";
   }
-  return prompt;
 }
 
 export const runtime = "nodejs";
@@ -140,14 +135,20 @@ export async function POST(req: NextRequest) {
   conv.messages.push(userMsg);
   await memory.saveConversation(conv);
 
-  // Enrichir le prompt système avec la personnalité d'Origin et le contexte
-  // RAG (base de connaissances). C'est ce qui rend Origin "vivante" : elle
-  // répond selon sa personnalité (interview) et ses connaissances (livres/notes).
-  const enrichedPrompt = await buildOriginSystemPrompt(
-    settings.systemPrompt,
-    body.message
-  );
-  const enrichedSettings: Settings = { ...settings, systemPrompt: enrichedPrompt };
+  // En parallèle : prompt système (personnalité, stable entre les tours pour
+  // le cache de préfixe Ollama) et contexte RAG (variable, injecté dans le
+  // message utilisateur). C'est ce qui rend Origin "vivante" : elle répond
+  // selon sa personnalité (interview) et ses connaissances (livres/notes).
+  const [systemPrompt, ragContext] = await Promise.all([
+    buildOriginSystemPrompt(settings.systemPrompt),
+    buildRagContext(body.message),
+  ]);
+  if (ragContext) {
+    userMsg.content = `${body.message}\n\n## Contexte de ta base de connaissances\nVoici des extraits pertinents issus des documents que ton créateur t'a donnés. Utilise-les pour enrichir ta réponse, et cite la source quand c'est pertinent :\n\n${ragContext}`;
+    conv.messages[conv.messages.length - 1] = userMsg;
+    await memory.saveConversation(conv);
+  }
+  const enrichedSettings: Settings = { ...settings, systemPrompt };
 
   // Handler d'approbation : suspend le stream en créant une approbation en
   // attente (résolue par POST /api/approve, ou refus auto après 120s). L'Agent

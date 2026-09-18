@@ -70,6 +70,14 @@ export interface Settings {
    * Désactivé par défaut.
    */
   powerUser: boolean;
+
+  /**
+   * Mode rapide : définitions d'outils compactes + historique réduit pour
+   * accélérer l'évaluation du prompt sur CPU (la définition complète des
+   * outils coûte plusieurs secondes de prompt eval à chaque message).
+   * Activé par défaut.
+   */
+  fastMode: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -83,6 +91,7 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: "nexus",
   fontSize: 15,
   powerUser: false,
+  fastMode: true,
 };
 
 export interface AgentStreamEvent {

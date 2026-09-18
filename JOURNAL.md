@@ -459,3 +459,58 @@
 - Aucune logique modifiée dans Brain3D.tsx : vaisseaux, hover, bulles, double-clic, indicateur d'attente fonctionnent comme implémentés
 - 3 corrections de bugs visuels incluses (flicker vaisseaux, offset halo hover, position bulles) — détails ci-dessus
 - Le halo interne de Brain3D (sphère cyan opacity 0.08) a été retiré au profit de la membrane externe + blending additif (rendu plus propre, moins de surfaces qui se bloquent mutuellement)
+
+---
+
+## Vibe Code — 2026-09-18 — Optimisation vitesse chat (round 3 : prompt eval CPU)
+
+**Rôle :** Optimisation du temps de latence du chat sur CPU
+
+**Commit d'enregistrement :** `chore(agent): Vibe Code — optimisation prompt eval chat`
+
+### Diagnostic (mesures utilisateur : prompt eval ~40 tok/s, génération ~6,84 tok/s sur Ryzen 7 7730U)
+
+Trois goulots identifiés dans la chaîne de réponse :
+
+1. **Définitions d'outils complètes envoyées à chaque message** : les 9 outils (read_file, write_file, list_dir, run_command, calc, system_info, weather, web_search, schedule_reminder, file_search) avec descriptions et schémas JSON complets représentent ~700 tokens de prompt eval. À 40 tok/s, ça coûte ~18s par message, même pour "salut".
+2. **Contexte RAG injecté dans le prompt système** : celui-ci change à chaque message (recherche vectorielle sur le message courant) → le préfixe du prompt change à chaque tour → Ollama invalide son cache KV et réévalue tout (personnalité + historique).
+3. **Historique non borné** : chaque tour réévalue l'intégralité de la conversation.
+
+### Correctifs
+
+#### 1. Mode rapide (fastMode) — descriptions d'outils compactes
+- `packages/shared/src/index.ts` : nouveau champ `fastMode: boolean` dans `Settings` (défaut `true`)
+- `packages/agent-core/src/agent.ts` : `FAST_TOOL_DESCRIPTIONS` — 10 descriptions d'une ligne pour les 10 outils. Les noms et schémas de paramètres restent identiques (le modèle appelle correctement), seule la description est raccourcie
+- Impact : ~700 tokens → ~100 tokens de prompt eval sur les outils
+
+#### 2. Stabilité du prompt système — RAG déplacé dans le message utilisateur
+- `apps/web/app/api/chat/route.ts` : `buildOriginSystemPrompt(basePrompt)` ne contient plus que la personnalité (stable entre les tours) → le cache de préfixe KV d'Ollama reste valide
+- Nouvelle fonction `buildRagContext(userMessage)` : le contexte RAG est injecté dans le message utilisateur (dernier message), pas dans le prompt système
+- `buildOriginSystemPrompt` et `buildRagContext` s'exécutent en parallèle (`Promise.all`)
+- Le cache `promptCache` est désormais indexé par prompt de base (stable) au lieu du message utilisateur
+- Impact : le préfixe (system + historique) n'est réévalué que s'il change vraiment ; sur les tours suivants, Ollama réutilise son cache
+
+#### 3. Historique borné (mode rapide)
+- `packages/agent-core/src/agent.ts` : `limitHistory()` — limite l'historique aux 12 derniers messages quand `fastMode` est actif. Les messages `tool` de tête sont élagués pour rester collés à leur appel assistant
+- Impact : les longues conversations ne ralentissent plus le chat
+
+#### 4. Toggle UI
+- `apps/web/components/SettingsPanel.tsx` : nouveau champ "Mode rapide" (checkbox, au-dessus du mode power user)
+- `apps/web/app/api/settings/route.ts` : persistance de `fastMode` (défaut true)
+
+### Fichiers modifiés
+- `packages/shared/src/index.ts`
+- `packages/agent-core/src/agent.ts`
+- `apps/web/app/api/chat/route.ts`
+- `apps/web/app/api/settings/route.ts`
+- `apps/web/components/SettingsPanel.tsx`
+- `JOURNAL.md`
+
+### Vérifications
+- `pnpm test` : ✅ 97/97 tests verts (71 agent-core + 14 personality + 12 knowledge)
+- `pnpm --filter @ia-app/web build` : ✅ (typecheck inclus)
+- Typecheck agent-core + shared : ✅
+
+### Note de coordination (agent maison / monde virtuel)
+- Aucun fichier du monde virtuel touché. La route `/api/chat` reste inchangée dans son contrat (mêmes événements SSE, même payload)
+- Si vous affichez le chat dans le Salon de la maison, consommez le même stream SSE — rien à changer

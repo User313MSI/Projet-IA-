@@ -285,6 +285,33 @@ export default function SettingsPanel({
             />
           </Field>
 
+          <Field label="Mode rapide">
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                cursor: "pointer",
+                padding: "8px 0",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={local.fastMode ?? true}
+                onChange={(e) =>
+                  setLocal({ ...local, fastMode: e.target.checked })
+                }
+                style={{ width: "18px", height: "18px", accentColor: "var(--accent)" }}
+              />
+              <span style={{ fontSize: "13px", color: "var(--text-dim)" }}>
+                Réponses plus rapides : descriptions d'outils compactes et
+                historique réduit (12 derniers messages). Désactive-le si tu
+                veux qu'Origin se souvienne de tout le début des longues
+                conversations.
+              </span>
+            </label>
+          </Field>
+
           <Field label="Mode power user">
             <label
               style={{
