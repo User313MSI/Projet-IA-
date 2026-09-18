@@ -239,6 +239,8 @@ export default function OriginPage() {
               activity={answered.length / Math.max(questions.length, 1)}
               knowledgeCount={documents.length}
               pendingQuestions={pending.length}
+              questionsAnswered={answered.length}
+              totalQuestions={questions.length}
             />
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginTop: "24px" }}>
               <StatCard label="Personnalité" value={`${progress}%`} sub={`${answered.length}/${questions.length} questions`} color="#7c4dff" />
@@ -643,15 +645,24 @@ export default function OriginPage() {
 
 function StatCard({ label, value, sub, color }: { label: string; value: string; sub: string; color: string }) {
   return (
-    <div style={{
-      padding: "16px",
-      borderRadius: "12px",
-      background: "var(--bg-2)",
-      border: "1px solid var(--border)",
-      textAlign: "center",
-    }}>
-      <p style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px", color: "var(--text-mute)", margin: "0 0 6px 0" }}>{label}</p>
-      <p style={{ fontSize: "28px", fontWeight: 700, color, margin: "0 0 4px 0" }}>{value}</p>
+    <div
+      style={{
+        padding: "20px",
+        borderRadius: "16px",
+        background: "linear-gradient(145deg, var(--bg-2), var(--bg-3))",
+        border: "1px solid var(--border)",
+        textAlign: "center",
+        position: "relative",
+        overflow: "hidden",
+        transition: "transform 0.2s, box-shadow 0.2s",
+      }}
+      onMouseEnter={(e) => {
+ e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = `0 8px 30px ${color}22`; }}
+      onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}
+    >
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: `linear-gradient(90deg, transparent, ${color}, transparent)` }} />
+      <p style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "1.5px", color: "var(--text-mute)", margin: "0 0 8px 0", fontWeight: 600 }}>{label}</p>
+      <p style={{ fontSize: "32px", fontWeight: 800, color, margin: "0 0 6px 0", textShadow: `0 0 20px ${color}55` }}>{value}</p>
       <p style={{ fontSize: "12px", color: "var(--text-mute)", margin: 0 }}>{sub}</p>
     </div>
   );
