@@ -152,3 +152,29 @@
 
 ### Travail (EN COURS)
 
+
+### Travail effectué (finalisé)
+
+**Phase 1 — Build corrigé**
+- Supprimé la ligne erronée `export { safeEvalMath } from "./security/math-eval"` dans `packages/personality-core/src/index.ts` (le fichier n'existe pas dans ce package)
+- Corrigé l'import de `createDefaultQuestions` dans `store.ts` (importé depuis `./types` au lieu de `./interview`)
+- Corrigé `noUncheckedIndexedAccess` dans `interview.ts` (accès indexé sécurisé avec `!`)
+- Ajouté les sous-chemins `./src/*` aux exports de `personality-core` et `knowledge-core` (pour que la page client puisse importer les modules purs sans entraîner `node:fs` du store)
+- Corrigé l'accès au worldview dans `page.tsx` (valeur par défaut `?? 0` pour `noUncheckedIndexedAccess`)
+- **Build Next.js passe** ✅ (page `/origin` : 5.97 kB, 108 kB First Load JS)
+
+**Phase 2 — Origin vivante dans le chat**
+- `apps/web/app/api/chat/route.ts` : câblage de `buildPersonalityPrompt()` + RAG
+  - Charge la personnalité et les questions d'Origin via `originStore`
+  - Construit le prompt système avec `buildPersonalityPrompt(personality, questions)`
+  - Recherche dans la base de connaissances via `knowledgeStore.queryWithContext(message, 5)`
+  - Injecte le contexte RAG dans le prompt système
+  - Origin répond maintenant selon sa personnalité ET ses connaissances (livres/notes)
+  - Si Origin n'est pas configurée → prompt par défaut préservé (fallback gracieux)
+  - Si Ollama/embeddings indisponible → pas de RAG, mais le chat marche quand même
+
+**Phase 3 — Accès au cerveau**
+- Bouton 🧠 ajouté dans la Sidebar → lien vers `/origin`
+- L'utilisateur accède au cerveau numérique depuis l'app principale
+
+**Tests : 97 verts** (14 personality + 12 knowledge + 71 agent-core)

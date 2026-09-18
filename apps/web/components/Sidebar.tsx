@@ -271,6 +271,21 @@ export default function Sidebar({
             {reachable ? "Ollama connecté" : "Ollama hors-ligne"}
           </span>
         </div>
+        <a
+          href="/origin"
+          style={{
+            color: "var(--text-dim)",
+            fontSize: "16px",
+            padding: "4px 8px",
+            borderRadius: "6px",
+            textDecoration: "none",
+            display: "inline-flex",
+            alignItems: "center",
+          }}
+          title="Cerveau numérique d'Origin"
+        >
+          🧠
+        </a>
         <button
           onClick={onOpenSettings}
           style={{

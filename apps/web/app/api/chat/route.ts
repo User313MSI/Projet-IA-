@@ -1,9 +1,50 @@
 import type { NextRequest } from "next/server";
 import { Agent, memory } from "@ia-app/agent-core";
-import type { ChatMessage, AgentStreamEvent } from "@ia-app/shared";
+import { originStore } from "@ia-app/personality-core";
+import { buildPersonalityPrompt } from "@ia-app/personality-core";
+import { knowledgeStore } from "@ia-app/knowledge-core";
+import type { ChatMessage, AgentStreamEvent, Settings } from "@ia-app/shared";
 import { uid } from "@ia-app/shared";
 import { guard, readJsonBody } from "../../../lib/auth";
 import { makeApprovalHandler, clearConversationApprovals } from "../../../lib/approvals";
+
+/**
+ * Construit le prompt système d'Origin : personnalité (interview) + contexte
+ * de la base de connaissances (RAG). Côté serveur uniquement (utilise node:fs
+ * via les stores). Si Origin n'est pas encore configurée, on garde le prompt
+ * par défaut des settings.
+ */
+async function buildOriginSystemPrompt(
+  basePrompt: string,
+  userMessage: string
+): Promise<string> {
+  let prompt = basePrompt;
+  try {
+    const personality = await originStore.loadPersonality();
+    const questions = await originStore.loadQuestions();
+    if (personality) {
+      prompt = buildPersonalityPrompt(personality, questions);
+    }
+  } catch {
+    // Origin non configurée → on garde le prompt par défaut.
+  }
+  // RAG : recherche dans la base de connaissances et injection du contexte.
+  try {
+    const reachable = await knowledgeStore.isEmbeddingReachable();
+    if (reachable) {
+      const stats = await knowledgeStore.getStats();
+      if (stats && stats.totalChunks > 0) {
+        const { context } = await knowledgeStore.queryWithContext(userMessage, 5);
+        if (context) {
+          prompt += `\n\n## Contexte de ta base de connaissances\nVoici des extraits pertinents issus des documents que ton créateur t'a donnés. Utilise-les pour enrichir ta réponse, et cite la source quand c'est pertinent :\n\n${context}`;
+        }
+      }
+    }
+  } catch {
+    // Base de connaissances indisponible → on continue sans contexte RAG.
+  }
+  return prompt;
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,13 +93,22 @@ export async function POST(req: NextRequest) {
   conv.messages.push(userMsg);
   await memory.saveConversation(conv);
 
+  // Enrichir le prompt système avec la personnalité d'Origin et le contexte
+  // RAG (base de connaissances). C'est ce qui rend Origin "vivante" : elle
+  // répond selon sa personnalité (interview) et ses connaissances (livres/notes).
+  const enrichedPrompt = await buildOriginSystemPrompt(
+    settings.systemPrompt,
+    body.message
+  );
+  const enrichedSettings: Settings = { ...settings, systemPrompt: enrichedPrompt };
+
   // Handler d'approbation : suspend le stream en créant une approbation en
   // attente (résolue par POST /api/approve, ou refus auto après 120s). L'Agent
   // émet auparavant l'événement `approval_required` que le client affiche.
   const approveHandler = makeApprovalHandler(conversationId);
 
   const agent = new Agent({
-    settings,
+    settings: enrichedSettings,
     cwd: process.cwd(),
     powerUser: settings.powerUser,
     approve: approveHandler,
