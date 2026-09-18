@@ -17,15 +17,16 @@ function createWindow(): void {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
     },
   });
 
   if (isDev) {
-    mainWindow.loadURL("http://localhost:3000");
+    mainWindow.loadURL("http://localhost:3001");
     mainWindow.webContents.openDevTools({ mode: "detach" });
   } else {
     mainWindow.loadFile(
-      path.join(__dirname, "..", "..", "web", "out", "index.html")
+      path.join(__dirname, "..", "..", "..", "apps", "web", "out", "index.html")
     );
   }
 
