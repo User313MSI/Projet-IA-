@@ -49,6 +49,31 @@ async function buildOriginSystemPrompt(
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// Préchauffage du modèle : garde le modèle chargé en mémoire RAM d'Ollama
+// pour éviter le temps de chargement (~5-15s) au premier token.
+let modelWarmed = new Set<string>();
+async function warmModel(model: string, ollamaUrl: string): Promise<void> {
+  if (modelWarmed.has(model)) return;
+  try {
+    const res = await fetch(`${ollamaUrl}/api/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model,
+        prompt: "",
+        keep_alive: "30m",
+        stream: false,
+      }),
+      signal: AbortSignal.timeout(60000),
+    });
+    if (res.ok) {
+      modelWarmed.add(model);
+    }
+  } catch {
+    // Ollama indisponible → on continue sans préchauffage.
+  }
+}
+
 export async function POST(req: NextRequest) {
   const g = await guard(req);
   if (g) return g;
@@ -73,6 +98,8 @@ export async function POST(req: NextRequest) {
   }
 
   const settings = await memory.loadSettings();
+  // Préchauffage du modèle en parallèle (non bloquant)
+  void warmModel(settings.model, settings.ollamaUrl);
   let conv = body.conversationId
     ? await memory.getConversation(body.conversationId)
     : null;

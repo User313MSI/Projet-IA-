@@ -71,6 +71,7 @@ export class OllamaClient {
   async *chat(
     req: OllamaChatRequest
   ): AsyncGenerator<string, OllamaChatResponse, void> {
+    // Préchauffage : garder le modèle chargé en mémoire pour réduire la latence
     const res = await fetch(`${this.baseUrl}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
