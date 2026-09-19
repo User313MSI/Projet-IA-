@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "../../../lib/client";
 import type { Personality, InterviewQuestion } from "@ia-app/personality-core/client";
@@ -53,7 +53,6 @@ export default function MaisonPage() {
   const [data, setData] = useState<WorldData | null>(null);
   const [selection, setSelection] = useState<SelectionState | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const lastDataRef = useRef<WorldData | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,7 +71,6 @@ export default function MaisonPage() {
           sessions: d.evolution?.totalSessions ?? 0,
           growth: Math.min(1, (d.documents?.length ?? 0) * 0.06 + (d.evolution?.totalQuestionsAnswered ?? 0) * 0.03),
         };
-        lastDataRef.current = world;
         setData(world);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));

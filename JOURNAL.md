@@ -523,14 +523,40 @@ Trois goulots identifiés dans la chaîne de réponse :
 
 **Commit d'enregistrement :** `chore(agent): Aurora — enregistrement monde virtuel Origin`
 
-**Mission :** Construire la maison virtuelle 3D d'Origin (prompt PROMPT_MAISON.md) : extérieur sur plateforme flottante dans un ciel étoilé, intérieur où chaque pièce matérialise une fonction d'Origin (Cerveau, Bibliothèque/RAG, Interview, Salon/Chat, Chambre/Personnalité, Jardin/Évolution), avatar orbe d'Origin qui se déplace de pièce en pièce. Accès depuis /origin via bouton « Maison », page `/origin/maison`.
+**Coordination :** `git pull` fait avant de commencer. Aucun fichier de Vibe Code modifié (Brain3D.tsx, API routes, packages, stores intacts). Travail basé sur main (40e20af), rebase sur le nouveau commit de Vibe Code (70ed617) avant push.
 
-### Plan technique
-- Nouveaux fichiers uniquement : `apps/web/components/origin/world/*` + `apps/web/app/origin/maison/page.tsx` + un bouton « Maison » dans `apps/web/app/origin/page.tsx` (aucune modification de Brain3D.tsx, des API routes, des packages ou des stores)
-- Three.js pur (même approche que Brain3D : useEffect + cleanup GPU), pas de R3F (fibre/drei installés mais non utilisés — évite l'alourdissement du bundle)
-- Three.js pur, `dpr` ≤ 2, low-poly stylisé lumineux, textures procédurales (aucune dépendance ajoutée)
-- Données via fetchs existants : `/api/origin/state`, `/api/origin/questions`, `/api/chat` (SSE), `/api/conversations`
-- Phase 3 (avatar orbe réactif) intégrée dès la V1
+### Mission
+Construire la maison virtuelle 3D d'Origin : extérieur sur plateforme flottante dans un ciel étoilé, intérieur où chaque pièce matérialise une fonction d'Origin (Cerveau, Bibliothèque/RAG, Interview, Salon/Chat, Chambre/Personnalité, Jardin/Évolution), avatar orbe d'Origin qui se déplace de pièce en pièce. Accès depuis /origin via bouton « Maison », page `/origin/maison`.
 
-### Travail en cours
-- [en cours] Construction du monde — détails et vérifications à la fin de session
+### Architecture
+Three.js pur (même approche que Brain3D : useEffect + cleanup GPU complet), pas de R3F — évite d'alourdir le bundle. Import dynamique `ssr: false`. `dpr` ≤ 2, low-poly stylisé lumineux, textures procédurales (canvas 2D), aucune nouvelle dépendance.
+
+### Fichiers créés
+- `apps/web/components/origin/world/palette.ts` — couleurs, positions des 6 pièces, infos catégories/documents/traits
+- `apps/web/components/origin/world/Maison.tsx` — extérieur : plateforme flottante à anneaux concentriques lumineux, coque cylindrique organique + dôme, 9 fenêtres/bandeaux qui respirent (emissive pulsée cyan/violet), porche + arche, chemin lumineux d'entrée (8 dalles + halo), porte qui s'ouvre au clic (pivot charnière, lissage), panneau holographique « MAISON D'ORIGIN » (CanvasTexture)
+- `apps/web/components/origin/world/Rooms.tsx` — les 6 pièces : Salle du Cerveau (icosaèdre violet + membrane + 70 neurones + impulsions orbitales + anneaux), Bibliothèque (3 étagères + un livre par document indexé, couleur par type, livre récent = sur-lumineux), Salle d'Interview (siège + questions en attente flottant au-dessus en bulles colorées par catégorie), Salon (canapé + table + écran holographique qui respire), Chambre (lit + miroir + 7 orbes de traits de personnalité), Jardin (6 plantes qui grandissent selon la croissance d'Origin, point lights vert néon). Étiquettes holographiques Orbitron par pièce, disques lumineux au sol activés à la sélection
+- `apps/web/components/origin/world/OriginAvatar.tsx` — orbe d'Origin : cœur blanc-cyan, halo, 2 anneaux, lumière ponctuelle ; erre de pièce en pièce (waypoints), flotte, « suit du regard » (les anneaux s'orientent vers la caméra), teinte selon la pièce, pic de pulsation quand Origin parle (speakUntil)
+- `apps/web/components/origin/world/OriginWorld.tsx` — scène complète : ciel étoilé (1600 points), 2 nébuleuses procédurales, 260 particules flottantes, brouillard, éclairage nocturne ; navigation caméra libre ZQSD/WASD + flèches + souris (drag pour regarder, distinction clic/drag) ; raycast clic sur porte (entre/sort) et pièces (focus caméra + panneau d'info) ; limites plateforme/parois ; fonctions apply* qui branchent les données réelles (documents → livres, questions → bulles, traits → orbes, croissance → plantes, activité → cerveau)
+- `apps/web/app/origin/maison/page.tsx` — page plein écran : chargement `/api/origin/state` (rafraîchi 20 s), loader spinner-orbit, barre supérieure, panneau de sélection glassmorphisme, aide clavier
+
+### Fichier modifié
+- `apps/web/app/origin/page.tsx` — ajout du bouton « 🏠 Maison » (lien `/origin/maison`) dans la barre d'onglets. Aucune autre modification : Brain3D.tsx intact.
+
+### Données
+Uniquement les fetchs existants (`/api/origin/state` via apiFetch + token). Aucune modification d'API, de store ni de package. Les pièces se mettent à jour au rechargement des données (20 s) : nouveau document → nouveau livre lumineux, question répondu → bulle retirée, etc.
+
+### Vérifications
+- `pnpm typecheck` : ✅ (7 projets)
+- `pnpm build` : ✅ — `/origin/maison` : 3.05 kB (105 kB First Load JS), monde 3D lazy-loadé
+- `pnpm test` : ✅ 97 tests verts (14 personality + 12 knowledge + 71 agent-core)
+- Smoke test production (`next start`) : `/origin/maison` → 200, conteneur plein écran rendu, pas d'erreur serveur ; `/origin` → 200
+
+### Décisions & compromis
+- Salon : le chat texte complet n'est pas embarqué dans la V1 (perfs et séparation des responsabilités) — l'écran holographique matérialise la conversation, un clic sur le salon affiche les infos. Le chat réel reste sur la page principale. Noté pour la V2.
+- Le miroir de la chambre est symbolique (dégradé émissif) : pas de render-target coûteux sur CPU-only.
+
+### Prochaines étapes suggérées (V2)
+- Mini-chat dans le salon (streaming SSE `/api/chat`)
+- Clic sur un livre → aperçu du contenu du document
+- Mode interview complet depuis le siège
+- Ville (Phase 4) — ne pas commencer
