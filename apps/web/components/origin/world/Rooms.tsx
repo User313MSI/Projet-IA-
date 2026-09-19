@@ -265,6 +265,20 @@ export function buildRooms(): RoomsLayout {
   root.add(roomMeshes.library);
   floorGlow.library = glowDisc(root, 0x00ff9d, libPos.x, libPos.z, 3.4);
 
+  // Tapis lumineux au centre de la bibliothèque
+  const carpetMat = new THREE.MeshBasicMaterial({
+    color: 0x00ff9d,
+    transparent: true,
+    opacity: 0.04,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  const carpet = new THREE.Mesh(new THREE.CircleGeometry(2.4, 28), carpetMat);
+  carpet.rotation.x = -Math.PI / 2;
+  carpet.position.set(libPos.x, 0.06, libPos.z);
+  root.add(carpet);
+
   // ============ SALLE D'INTERVIEW ============
   const intPos = { x: 13.5, z: -6 };
   const seatMats: THREE.MeshBasicMaterial[] = [];

@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import type { Personality, InterviewQuestion } from "@ia-app/personality-core/client";
 import { pendingQuestions } from "@ia-app/personality-core/client";
 import type { Document, KnowledgeStats } from "@ia-app/knowledge-core/client";
@@ -92,9 +95,21 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
       const moon = new THREE.DirectionalLight(0x9fd8ff, 0.85);
       moon.position.set(14, 26, 18);
       scene.add(moon);
+      const moon2 = new THREE.DirectionalLight(0x7c4dff, 0.35);
+      moon2.position.set(-18, 14, -24);
+      scene.add(moon2);
       const interior = new THREE.PointLight(0x7c4dff, 1.0, 42, 1.6);
       interior.position.set(0, 6.5, -14);
       scene.add(interior);
+      const warmCorner = new THREE.PointLight(0xff6b9d, 0.5, 16, 2);
+      warmCorner.position.set(4.5, 3.2, -14);
+      scene.add(warmCorner);
+      const gardenLight = new THREE.PointLight(0x00ff9d, 0.5, 14, 2);
+      gardenLight.position.set(4.5, 3.0, -21.5);
+      scene.add(gardenLight);
+      const brainLight = new THREE.PointLight(0x7c4dff, 0.7, 12, 2);
+      brainLight.position.set(-13.5, 3.4, -6);
+      scene.add(brainLight);
 
       // ---------- Ciel étoilé ----------
       const starGeo = new THREE.BufferGeometry();
@@ -109,6 +124,30 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
       const starMat = new THREE.PointsMaterial({ color: 0xcfe8ff, size: 0.9, sizeAttenuation: true, transparent: true, opacity: 0.85, depthWrite: false });
       scene.add(new THREE.Points(starGeo, starMat));
       disposables.push(starGeo, starMat);
+
+      // Grandes étoiles colorées qui scintillent
+      const bigStarCount = 90;
+      const bigStarGeo = new THREE.BufferGeometry();
+      const bigStarPos = new Float32Array(bigStarCount * 3);
+      const bigStarPhase = new Float32Array(bigStarCount);
+      for (let i = 0; i < bigStarCount; i++) {
+        const v = new THREE.Vector3().randomDirection().multiplyScalar(140 + Math.random() * 60);
+        v.y = Math.abs(v.y) + 12;
+        bigStarPos[i * 3] = v.x; bigStarPos[i * 3 + 1] = v.y; bigStarPos[i * 3 + 2] = v.z;
+        bigStarPhase[i] = Math.random() * Math.PI * 2;
+      }
+      bigStarGeo.setAttribute("position", new THREE.BufferAttribute(bigStarPos, 3));
+      const bigStarMat = new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 2.2,
+        sizeAttenuation: true,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+      scene.add(new THREE.Points(bigStarGeo, bigStarMat));
+      disposables.push(bigStarGeo, bigStarMat);
 
       // Nébuleuse lointaine (billboard dégradé procédural)
       const nebCanvas = document.createElement("canvas");
@@ -148,6 +187,31 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
       const partMat = new THREE.PointsMaterial({ color: 0x8fe8ff, size: 0.14, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false });
       scene.add(new THREE.Points(partGeo, partMat));
       disposables.push(partGeo, partMat);
+
+      // Lucioles proches de la maison (dérive lente, scintillement)
+      const fireflyCount = 60;
+      const ffGeo = new THREE.BufferGeometry();
+      const ffPos = new Float32Array(fireflyCount * 3);
+      const ffSeed = new Float32Array(fireflyCount * 3);
+      for (let i = 0; i < fireflyCount; i++) {
+        ffPos[i * 3] = (Math.random() - 0.5) * 40;
+        ffPos[i * 3 + 1] = 0.5 + Math.random() * 5;
+        ffPos[i * 3 + 2] = (Math.random() - 0.5) * 44 - 4;
+        ffSeed[i * 3] = Math.random() * Math.PI * 2;
+        ffSeed[i * 3 + 1] = 0.2 + Math.random() * 0.5;
+        ffSeed[i * 3 + 2] = 0.3 + Math.random() * 0.7;
+      }
+      ffGeo.setAttribute("position", new THREE.BufferAttribute(ffPos, 3));
+      const ffMat = new THREE.PointsMaterial({
+        color: 0x00ff9d,
+        size: 0.22,
+        transparent: true,
+        opacity: 0.8,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+      scene.add(new THREE.Points(ffGeo, ffMat));
+      disposables.push(ffGeo, ffMat);
 
       // ---------- Maison + pièces ----------
       const doorOpenRef = { current: false };
@@ -325,6 +389,18 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
         }
       }
 
+      // ---------- Post-processing : bloom néon ----------
+      const composer = new EffectComposer(renderer);
+      composer.addPass(new RenderPass(scene, camera));
+      const bloom = new UnrealBloomPass(
+        new THREE.Vector2(width, height),
+        0.55, // strength
+        0.6,  // radius
+        0.62  // threshold
+      );
+      composer.addPass(bloom);
+      composer.setSize(width, height);
+
       // ---------- Boucle ----------
       const clock = new THREE.Clock();
       const forward = new THREE.Vector3();
@@ -437,7 +513,27 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
         }
         posArr.needsUpdate = true;
 
-        renderer.render(scene, camera);
+        // Grandes étoiles : scintillement
+        bigStarMat.opacity = 0.55 + 0.45 * Math.abs(Math.sin(t * 0.7));
+        bigStarMat.size = 1.8 + 0.9 * Math.sin(t * 1.3);
+
+        // Lucioles : dérive sinusoïdale + scintillement
+        const ffArr = ffGeo.getAttribute("position") as THREE.BufferAttribute;
+        for (let i = 0; i < fireflyCount; i++) {
+          const ph = ffSeed[i * 3]!;
+          const sp = ffSeed[i * 3 + 1]!;
+          const amp = ffSeed[i * 3 + 2]!;
+          ffArr.setXYZ(
+            i,
+            ffArr.getX(i) + Math.sin(t * sp + ph) * 0.35 * dt * amp * 10,
+            0.9 + Math.sin(t * sp * 0.8 + ph * 2) * 0.8 * amp,
+            ffArr.getZ(i) + Math.cos(t * sp * 0.9 + ph) * 0.35 * dt * amp * 10
+          );
+        }
+        ffArr.needsUpdate = true;
+        ffMat.opacity = 0.5 + 0.5 * Math.abs(Math.sin(t * 0.9));
+
+        composer.render();
       };
       animate();
 
@@ -447,6 +543,8 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
         renderer.setSize(w, h);
+        composer.setSize(w, h);
+        bloom.setSize(w, h);
       };
       window.addEventListener("resize", onResize);
 
@@ -469,6 +567,7 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
           }
         });
         for (const d of disposables) d.dispose();
+        composer.dispose();
         renderer.dispose();
         if (renderer.domElement.parentElement === mount) {
           mount.removeChild(renderer.domElement);

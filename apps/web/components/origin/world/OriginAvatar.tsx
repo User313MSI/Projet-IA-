@@ -6,11 +6,16 @@ export interface OriginAvatar {
   root: THREE.Group;
   coreMat: THREE.MeshBasicMaterial;
   haloMat: THREE.MeshBasicMaterial;
+  halo2Mat: THREE.MeshBasicMaterial;
   ringMat: THREE.MeshBasicMaterial;
   core: THREE.Mesh;
+  inner: THREE.Mesh;
   halo: THREE.Mesh;
+  halo2: THREE.Mesh;
   rings: THREE.Mesh[];
   light: THREE.PointLight;
+  sparks: THREE.Points;
+  sparkMat: THREE.PointsMaterial;
   pulse: { current: number };
   position: THREE.Vector3;
   target: THREE.Vector3;
@@ -40,6 +45,17 @@ export function createOriginAvatar(scene: THREE.Scene): OriginAvatar {
   const core = new THREE.Mesh(new THREE.SphereGeometry(0.32, 20, 20), coreMat);
   root.add(core);
 
+  // Noyau intérieur brillant
+  const innerMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.9,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  const inner = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 12), innerMat);
+  root.add(inner);
+
   const haloMat = new THREE.MeshBasicMaterial({
     color: 0x00e5ff,
     transparent: true,
@@ -51,6 +67,18 @@ export function createOriginAvatar(scene: THREE.Scene): OriginAvatar {
   const halo = new THREE.Mesh(new THREE.SphereGeometry(0.6, 24, 24), haloMat);
   root.add(halo);
 
+  // Second halo externe, plus large et plus faible
+  const halo2Mat = new THREE.MeshBasicMaterial({
+    color: 0x7c4dff,
+    transparent: true,
+    opacity: 0.12,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    side: THREE.BackSide,
+  });
+  const halo2 = new THREE.Mesh(new THREE.SphereGeometry(0.85, 20, 20), halo2Mat);
+  root.add(halo2);
+
   const ringMat = new THREE.MeshBasicMaterial({
     color: 0x7c4dff,
     transparent: true,
@@ -60,15 +88,37 @@ export function createOriginAvatar(scene: THREE.Scene): OriginAvatar {
     side: THREE.DoubleSide,
   });
   const rings: THREE.Mesh[] = [];
-  for (let i = 0; i < 2; i++) {
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.55 + i * 0.15, 0.02, 8, 40), ringMat);
-    ring.rotation.x = i === 0 ? Math.PI / 2 : 0.6;
+  for (let i = 0; i < 3; i++) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.5 + i * 0.13, 0.018, 8, 48), ringMat);
+    ring.rotation.x = i === 0 ? Math.PI / 2 : 0.5 + i * 0.5;
     root.add(ring);
     rings.push(ring);
   }
 
   const light = new THREE.PointLight(0x00e5ff, 1.2, 7, 2);
   root.add(light);
+
+  // Particules orbitales autour de l'orbe (poussière d'énergie)
+  const sparkCount = 14;
+  const sparkGeo = new THREE.BufferGeometry();
+  const sparkPos = new Float32Array(sparkCount * 3);
+  for (let i = 0; i < sparkCount; i++) {
+    const a = (i / sparkCount) * Math.PI * 2;
+    sparkPos[i * 3] = Math.cos(a) * 0.55;
+    sparkPos[i * 3 + 1] = Math.sin(a * 2) * 0.18;
+    sparkPos[i * 3 + 2] = Math.sin(a) * 0.55;
+  }
+  sparkGeo.setAttribute("position", new THREE.BufferAttribute(sparkPos, 3));
+  const sparkMat = new THREE.PointsMaterial({
+    color: 0x9fe8ff,
+    size: 0.08,
+    transparent: true,
+    opacity: 0.85,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  const sparks = new THREE.Points(sparkGeo, sparkMat);
+  root.add(sparks);
 
   const start = WAYPOINTS[0]?.pos ?? new THREE.Vector3(4.5, 1.75, -12.2);
   root.position.copy(start);
@@ -78,11 +128,16 @@ export function createOriginAvatar(scene: THREE.Scene): OriginAvatar {
     root,
     coreMat,
     haloMat,
+    halo2Mat,
     ringMat,
     core,
+    inner,
     halo,
+    halo2,
     rings,
     light,
+    sparks,
+    sparkMat,
     pulse: { current: 0 },
     position: root.position.clone(),
     target: start.clone(),
@@ -115,10 +170,16 @@ export function createAvatarAnimation(
 
       const coreScale = 1 + pulse * (speaking ? 0.5 : 0.14);
       avatar.core.scale.setScalar(coreScale);
+      avatar.inner.scale.setScalar(0.8 + pulse * 0.5);
       avatar.halo.scale.setScalar(1 + pulse * 0.3);
+      avatar.halo2.scale.setScalar(1.1 + pulse * 0.25);
       avatar.haloMat.opacity = 0.16 + pulse * 0.14;
+      avatar.halo2Mat.opacity = 0.08 + pulse * 0.08;
       avatar.coreMat.opacity = 0.85 + pulse * 0.15;
       avatar.light.intensity = 0.9 + pulse * 0.9 + (speaking ? 0.8 : 0);
+      avatar.sparks.rotation.y = t * 0.8;
+      avatar.sparks.rotation.x = Math.sin(t * 0.5) * 0.2;
+      avatar.sparkMat.opacity = 0.5 + pulse * 0.4;
 
       const roomKey = avatar.currentRoom.current;
       const roomTint = roomKey === "library" || roomKey === "jardin" ? 0x00ff9d : roomKey === "chambre" || roomKey === "interview" ? 0xff9ecd : 0x00e5ff;
@@ -127,6 +188,7 @@ export function createAvatarAnimation(
 
       avatar.rings[0]!.rotation.z = t * 0.9;
       avatar.rings[1]!.rotation.y = t * -0.7;
+      avatar.rings[2]!.rotation.x = t * 0.5;
 
       // Errance de pièce en pièce
       const pos = avatar.root.position;

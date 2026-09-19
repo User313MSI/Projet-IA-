@@ -560,3 +560,46 @@ Uniquement les fetchs existants (`/api/origin/state` via apiFetch + token). Aucu
 - Clic sur un livre → aperçu du contenu du document
 - Mode interview complet depuis le siège
 - Ville (Phase 4) — ne pas commencer
+
+## Aurora — 2026-09-18 — Amélioration graphique majeure de la maison
+
+**Objectif :** "améliorer à fond" le rendu visuel du monde.
+
+### Travail effectué
+
+#### 1. Post-processing bloom (`OriginWorld.tsx`)
+- `EffectComposer` + `RenderPass` + `UnrealBloomPass` (three/examples) : le vrai secret du look néon — toutes les surfaces émissives rayonnent désormais (fenêtres, LED, orbe, lucioles)
+- Paramètres calibrés CPU : strength 0.55, radius 0.6, threshold 0.62 ; resize + dispose gérés
+
+#### 2. Ciel & ambiance (`OriginWorld.tsx`)
+- 90 grandes étoiles colorées qui scintillent (taille + opacité animées)
+- 60 lucioles vert-cyan près de la maison : dérive sinusoïdale organique, scintillement
+- Second directional light violet (contre-jour) + 3 point lights d'accent par pièce (rose salon, vert jardin, violet cerveau)
+
+#### 3. Extérieur (`Maison.tsx`, réécrit)
+- **Sol holographique** : ShaderMaterial GLSL — anneaux concentriques ondulants + rayons + scintillement, mix cyan/violet, pulsation lente
+- **Normal maps procédurales** (canvas bruit) sur plateforme, sol, coque, toit, porche → relief matériau
+- **Bord LED cyan** de la plateforme + halo lumineux sous chaque anneau suspendu (cyan extérieur, violet intérieur) + 10 faisceaux verticaux clignotants
+- **12 nervures lumineuses** sur le dôme (alternées violet/cyan) + anneau faîtier renforcé
+- **Flèche + balise rose clignotante** au sommet avec vraie PointLight synchronisée
+- **Fenêtres** : emissiveMap procédurale (quadrillage de panneaux lumineux), transmission + clearcoat renforcés, encadrements (meneaux, linteaux, seuils)
+- **Porche** : 2 colonnes avec anneaux lumineux respirants, bordure LED du disque
+- **Chemin** : point lumineux central par dalle (pulsation décalée), 10 bornes violettes
+- **Porte** : motif circuit imprimé procédural (decal additif), lueur violette au sol
+- **Enseigne** : sous-titre "le cocon d'une intelligence locale"
+- Système `breathers` générique : chaque matériau émissif respire avec sa base/amplitude/vitesse/phase propres
+
+#### 4. Avatar d'Origin (`OriginAvatar.tsx`)
+- Noyau blanc intérieur + second halo violet externe + 3e anneau
+- 14 particules orbitales (poussière d'énergie) en rotation
+
+#### 5. Bibliothèque (`Rooms.tsx`)
+- Tapis lumineux au centre de la pièce
+
+### Vérifications
+- `pnpm typecheck` : ✅
+- `pnpm build` : ✅ (`/origin/maison` : 3.04 kB, monde lazy-loadé)
+- `pnpm test` : ✅ 97 tests verts
+
+### Perf
+Bloom = 3 passes GPU supplémentaires mais sur scène low-poly ça reste léger ; si le user constate une chute de FPS sur son laptop CPU, le bloom est le premier paramètre à réduire (strength 0.35) ou à couvrir d'un toggle.
