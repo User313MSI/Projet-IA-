@@ -1,7 +1,23 @@
-"use client";
-
 import * as THREE from "three";
 import { ROOM_POS } from "./palette";
+import {
+  MAT,
+  box,
+  boxOnFloor,
+  makeSofa,
+  makeArmchair,
+  makeCoffeeTable,
+  makeBookshelf,
+  makeBed,
+  makeNightstand,
+  makeFloorLamp,
+  makePottedPlant,
+  makeRug,
+  makeWallMirror,
+  makePainting,
+  makeHoloScreen,
+  makeRadiator,
+} from "./kit";
 
 export interface PickRoomFn {
   room: string | null;
@@ -22,7 +38,7 @@ export interface RoomsLayout {
     pulseMat: THREE.MeshBasicMaterial;
   } | null;
   library: {
-    roots: THREE.Group[];
+    roots: THREE.Object3D[];
     bookMats: THREE.MeshStandardMaterial[];
     newGlow: THREE.MeshBasicMaterial | null;
   } | null;
@@ -51,61 +67,13 @@ export interface RoomsLayout {
   } | null;
 }
 
-function makeLabelTexture(text: string, color: string, size = 42): THREE.CanvasTexture {
-  const canvas = document.createElement("canvas");
-  canvas.width = 512;
-  canvas.height = 96;
-  const ctx = canvas.getContext("2d");
-  if (ctx) {
-    ctx.font = `600 ${size}px Orbitron, sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 16;
-    ctx.fillStyle = color;
-    ctx.fillText(text, 256, 48);
-  }
-  return new THREE.CanvasTexture(canvas);
-}
-
-function addRoomLabel(
-  parent: THREE.Object3D,
-  text: string,
-  colorCss: string,
-  x: number,
-  y: number,
-  z: number,
-  ry: number
-): void {
-  const tex = makeLabelTexture(text.toUpperCase(), colorCss);
-  const mat = new THREE.MeshBasicMaterial({
-    map: tex,
-    transparent: true,
-    opacity: 0.92,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-  });
-  const label = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 0.9), mat);
-  label.position.set(x, y, z);
-  label.rotation.y = ry;
-  parent.add(label);
-}
-
-function glowDisc(parent: THREE.Object3D, color: number, x: number, z: number, radius: number): THREE.MeshBasicMaterial | null {
-  const mat = new THREE.MeshBasicMaterial({
-    color,
-    transparent: true,
-    opacity: 0.05,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-  });
-  const disc = new THREE.Mesh(new THREE.CircleGeometry(radius, 24), mat);
-  disc.rotation.x = -Math.PI / 2;
-  disc.position.set(x, 0.05, z);
-  parent.add(disc);
-  return mat;
+// Pièce invisible cliquable (zone de sélection, pas de mesh visible)
+function makePickZone(room: string, w: number, h: number, d: number, x: number, y: number, z: number): THREE.Mesh {
+  const zone = new THREE.Mesh(new THREE.BoxGeometry(w, h, d));
+  zone.position.set(x, y, z);
+  zone.userData.pick = { room, item: null, data: null } as PickRoomFn;
+  zone.visible = false;
+  return zone;
 }
 
 export function buildRooms(): RoomsLayout {
@@ -113,437 +81,319 @@ export function buildRooms(): RoomsLayout {
   const pickables: THREE.Object3D[] = [];
   const roomMeshes: Record<string, THREE.Mesh> = {};
   const floorGlow: Record<string, THREE.MeshBasicMaterial | null> = {};
+  const H = 3.2; // hauteur sous plafond (cohérente avec la maison)
 
-  // Mobilier : bois chaleureux, tissu, laiton — comme une vraie maison
-  const furnitureMat = new THREE.MeshStandardMaterial({
-    color: 0x7a5236,
-    roughness: 0.65,
-    metalness: 0.0,
-  });
-  const fabricMat = new THREE.MeshStandardMaterial({
-    color: 0x9c8f80,
-    roughness: 0.95,
-    metalness: 0.0,
-  });
-  const brassMat = new THREE.MeshStandardMaterial({
-    color: 0xc9a227,
-    roughness: 0.35,
-    metalness: 0.85,
-  });
-
-  // ============ SALLE DU CERVEAU ============
-  const brainRoot = new THREE.Group();
+  // ================= SALLE DU CERVEAU (pièce studieuse) =================
   const brainPos = ROOM_POS.brain!;
+  const brainRoot = new THREE.Group();
   let brainMesh: THREE.Mesh;
   let neurons: THREE.Points;
   const pulses: THREE.Mesh[] = [];
   let pulseMat: THREE.MeshBasicMaterial;
   {
-    const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.8, 0.5, 14), furnitureMat);
-    pedestal.position.set(brainPos.x, 0.25, brainPos.z);
-    brainRoot.add(pedestal);
+    // Le cerveau flotte au-dessus d'un bureau en bois, présenté comme un objet précieux
+    const desk = boxOnFloor(1.4, 0.75, 0.7, MAT.wood, brainPos.x, 0, brainPos.z);
+    brainRoot.add(desk);
+    const deskLeg = boxOnFloor(1.2, 0.72, 0.5, MAT.darkWood, brainPos.x, 0, brainPos.z);
+    deskLeg.visible = false;
+    brainRoot.add(deskLeg);
 
     const brainMat = new THREE.MeshStandardMaterial({
       color: 0xd8c8e8,
       emissive: 0x9a6be8,
-      emissiveIntensity: 0.45,
-      roughness: 0.55,
+      emissiveIntensity: 0.4,
+      roughness: 0.6,
       metalness: 0.05,
     });
-    brainMesh = new THREE.Mesh(new THREE.IcosahedronGeometry(1.35, 3), brainMat);
-    brainMesh.position.set(brainPos.x, 2.35, brainPos.z);
+    brainMesh = new THREE.Mesh(new THREE.IcosahedronGeometry(0.5, 3), brainMat);
+    brainMesh.position.set(brainPos.x, 1.35, brainPos.z);
     brainRoot.add(brainMesh);
 
     const memMat = new THREE.MeshPhysicalMaterial({
       color: 0xd0e4f2,
       emissive: 0x9ac8e8,
-      emissiveIntensity: 0.2,
+      emissiveIntensity: 0.15,
       roughness: 0.15,
-      metalness: 0.0,
       transparent: true,
-      opacity: 0.18,
+      opacity: 0.16,
       clearcoat: 0.8,
     });
-    const membrane = new THREE.Mesh(new THREE.SphereGeometry(1.65, 24, 20), memMat);
+    const membrane = new THREE.Mesh(new THREE.SphereGeometry(0.62, 20, 16), memMat);
     membrane.position.copy(brainMesh.position);
     brainRoot.add(membrane);
 
-    const N = 70;
+    // Neurones : petits points discrets autour du cerveau
+    const N = 42;
     const positions = new Float32Array(N * 3);
     for (let i = 0; i < N; i++) {
-      const v = new THREE.Vector3().randomDirection().multiplyScalar(1.5 + Math.random() * 0.45);
+      const v = new THREE.Vector3().randomDirection().multiplyScalar(0.55 + Math.random() * 0.12);
       positions[i * 3] = brainPos.x + v.x;
-      positions[i * 3 + 1] = 2.35 + v.y;
+      positions[i * 3 + 1] = 1.35 + v.y;
       positions[i * 3 + 2] = brainPos.z + v.z;
     }
     const geom = new THREE.BufferGeometry();
     geom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    const ptsMat = new THREE.PointsMaterial({
-      color: 0x00ff9d,
-      size: 0.07,
+    neurons = new THREE.Points(geom, new THREE.PointsMaterial({
+      color: 0xc8a8f0,
+      size: 0.035,
       transparent: true,
-      opacity: 0.9,
+      opacity: 0.75,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
-    });
-    neurons = new THREE.Points(geom, ptsMat);
+    }));
     brainRoot.add(neurons);
 
     pulseMat = new THREE.MeshBasicMaterial({
-      color: 0x00e5ff,
+      color: 0xb090e8,
       transparent: true,
-      opacity: 0.8,
+      opacity: 0.6,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
-    for (let i = 0; i < 7; i++) {
-      const pulse = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 8), pulseMat);
+    for (let i = 0; i < 5; i++) {
+      const pulse = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), pulseMat);
       pulse.userData.seed = i * 1.37;
       pulses.push(pulse);
       brainRoot.add(pulse);
     }
 
-    const brainRing = new THREE.Mesh(
-      new THREE.TorusGeometry(1.95, 0.05, 8, 40),
-      new THREE.MeshBasicMaterial({
-        color: 0x00e5ff,
-        transparent: true,
-        opacity: 0.25,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-      })
-    );
-    brainRing.rotation.x = Math.PI / 2;
-    brainRing.position.set(brainPos.x, 0.55, brainPos.z);
-    brainRoot.add(brainRing);
+    // Bibliothèque d'appoint + fauteuil de lecture : la pièce vit
+    const cornerShelf = makeBookshelf();
+    cornerShelf.group.position.set(brainPos.x + 2.6, 0, brainPos.z + 2.4);
+    cornerShelf.group.rotation.y = -Math.PI / 4;
+    brainRoot.add(cornerShelf.group);
 
-    const ring2 = brainRing.clone();
-    ring2.scale.setScalar(1.25);
-    brainRoot.add(ring2);
+    const reading = makeArmchair();
+    reading.position.set(brainPos.x + 2.8, 0, brainPos.z - 2.2);
+    brainRoot.add(reading);
 
-    addRoomLabel(brainRoot, "Salle du Cerveau", "#00e5ff", brainPos.x, 3.1, brainPos.z + 2.6, 0);
+    const pickZone = makePickZone("brain", 5, H, 5, brainPos.x, H / 2, brainPos.z);
+    brainRoot.add(pickZone);
+    pickables.push(pickZone);
+    roomMeshes.brain = pickZone;
+    root.add(brainRoot);
   }
-  roomMeshes.brain = new THREE.Mesh(new THREE.SphereGeometry(2.2, 10, 10));
-  roomMeshes.brain.position.set(brainPos.x, 2.3, brainPos.z);
-  roomMeshes.brain.userData.pick = { room: "brain", item: null, data: null } as PickRoomFn;
-  pickables.push(roomMeshes.brain);
-  brainRoot.add(roomMeshes.brain);
-  floorGlow.brain = glowDisc(root, 0x7c4dff, brainPos.x, brainPos.z, 3.4);
-  root.add(brainRoot);
 
-  // ============ BIBLIOTHÈQUE ============
+  // ================= BIBLIOTHÈQUE (salle de lecture chaleureuse) =================
   const libPos = ROOM_POS.library!;
-  const libRoots: THREE.Group[] = [];
+  const libShelfGroups: THREE.Object3D[] = [];
   const bookMats: THREE.MeshStandardMaterial[] = [];
   {
-    const shelfMat = new THREE.MeshStandardMaterial({
-      color: 0x6b4226,
-      roughness: 0.7,
-      metalness: 0.0,
-    });
-    const configs = [
-      { x: libPos.x - 3.2, z: libPos.z, ry: Math.PI / 2 },
-      { x: libPos.x + 3.2, z: libPos.z, ry: Math.PI / 2 },
-      { x: libPos.x, z: libPos.z - 3.2, ry: 0 },
+    // 3 bibliothèques adossées aux murs + table de lecture + lampes
+    const shelfSpecs: { x: number; z: number; ry: number }[] = [
+      { x: libPos.x - 2.5, z: libPos.z - 2.6, ry: 0 },
+      { x: libPos.x + 2.5, z: libPos.z - 2.6, ry: 0 },
+      { x: libPos.x - 3.4, z: libPos.z + 0.6, ry: Math.PI / 2 },
     ];
-    for (const cfg of configs) {
-      const shelfGroup = new THREE.Group();
-      shelfGroup.position.set(cfg.x, 0, cfg.z);
-      shelfGroup.rotation.y = cfg.ry;
-      const frame = new THREE.Mesh(new THREE.BoxGeometry(5.6, 4.2, 0.55), shelfMat);
-      frame.position.set(0, 2.1, 0);
-      shelfGroup.add(frame);
-      libRoots.push(shelfGroup);
-      root.add(shelfGroup);
+    for (const spec of shelfSpecs) {
+      const sh = makeBookshelf();
+      sh.group.position.set(spec.x, 0, spec.z);
+      sh.group.rotation.y = spec.ry;
+      root.add(sh.group);
+      libShelfGroups.push(...sh.shelves);
     }
 
-    addRoomLabel(root, "Bibliothèque", "#00ff9d", libPos.x, 3.1, libPos.z + 2.6, 0);
+    // Table de lecture + 2 chaises + lampe
+    const table = boxOnFloor(1.1, 0.75, 0.7, MAT.wood, libPos.x, 0, libPos.z + 1.2);
+    root.add(table);
+    for (const dx of [-0.75, 0.75]) {
+      const chairSeat = boxOnFloor(0.42, 0.45, 0.42, MAT.wood, libPos.x + dx, 0, libPos.z + 1.2);
+      root.add(chairSeat);
+      const chairBack = boxOnFloor(0.42, 0.45, 0.08, MAT.wood, libPos.x + dx, 0.45, libPos.z + 1.44);
+      root.add(chairBack);
+    }
+    const lamp = makeFloorLamp();
+    lamp.group.position.set(libPos.x + 2.0, 0, libPos.z + 1.6);
+    root.add(lamp.group);
+
+    const pickZone = makePickZone("library", 5.6, H, 5, libPos.x, H / 2, libPos.z);
+    root.add(pickZone);
+    pickables.push(pickZone);
+    roomMeshes.library = pickZone;
   }
-  const newGlowMat = new THREE.MeshBasicMaterial({
-    color: 0x00ff9d,
-    transparent: true,
-    opacity: 0.35,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-  });
-  roomMeshes.library = new THREE.Mesh(new THREE.BoxGeometry(7.4, 4.6, 7.4));
-  roomMeshes.library.position.set(libPos.x, 2.2, libPos.z);
-  roomMeshes.library.userData.pick = { room: "library", item: null, data: null } as PickRoomFn;
-  pickables.push(roomMeshes.library);
-  root.add(roomMeshes.library);
-  floorGlow.library = glowDisc(root, 0x00ff9d, libPos.x, libPos.z, 3.4);
 
-  // Tapis lumineux au centre de la bibliothèque
-  const carpetMat = new THREE.MeshBasicMaterial({
-    color: 0x00ff9d,
-    transparent: true,
-    opacity: 0.04,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-  });
-  const carpet = new THREE.Mesh(new THREE.CircleGeometry(2.4, 28), carpetMat);
-  carpet.rotation.x = -Math.PI / 2;
-  carpet.position.set(libPos.x, 0.06, libPos.z);
-  root.add(carpet);
-
-  // ============ SALLE D'INTERVIEW ============
+  // ================= SALLE D'INTERVIEW (deux fauteuils face à face) =================
   const intPos = ROOM_POS.interview!;
   const seatMats: THREE.MeshBasicMaterial[] = [];
-  let seatMesh: THREE.Mesh | null = null;
   const seatGroup = new THREE.Group();
+  let seatMesh: THREE.Mesh | null = null;
   {
-    const base = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.5, 0.35, 12), furnitureMat);
-    base.position.set(intPos.x, 0.18, intPos.z);
-    seatGroup.add(base);
-    const cushionMat = new THREE.MeshStandardMaterial({
-      color: 0xa8564a,
-      roughness: 0.9,
-      metalness: 0.0,
-    });
-    const cushion = new THREE.Mesh(new THREE.SphereGeometry(1.05, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), cushionMat);
-    cushion.position.set(intPos.x, 0.35, intPos.z);
-    seatGroup.add(cushion);
-    const back = new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.6, 0.3), cushionMat);
-    back.position.set(intPos.x, 1.05, intPos.z + 1.0);
-    seatGroup.add(back);
+    // Deux vrais fauteuils face à face + table basse entre eux
+    const chairA = makeArmchair(MAT.fabricRed);
+    chairA.position.set(intPos.x - 1.1, 0, intPos.z);
+    chairA.rotation.y = Math.PI / 2;
+    seatGroup.add(chairA);
+    const chairB = makeArmchair(MAT.fabricRed);
+    chairB.position.set(intPos.x + 1.1, 0, intPos.z);
+    chairB.rotation.y = -Math.PI / 2;
+    seatGroup.add(chairB);
+    const lowTable = makeCoffeeTable();
+    lowTable.position.set(intPos.x, 0, intPos.z);
+    seatGroup.add(lowTable);
+    const rug = makeRug(1.6, 0x7a5c48);
+    rug.position.set(intPos.x, 0.02, intPos.z);
+    seatGroup.add(rug);
 
-    seatMesh = cushion;
-    seatMesh.userData.pick = { room: "interview", item: null, data: null } as PickRoomFn;
-    pickables.push(seatMesh);
+    const chairSeat = chairA.children[0] as THREE.Mesh;
+    chairSeat.userData.pick = { room: "interview", item: null, data: null } as PickRoomFn;
+    pickables.push(chairSeat);
+    seatMesh = chairSeat;
 
-    const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(1.7, 0.05, 8, 36),
-      new THREE.MeshBasicMaterial({
-        color: 0xff6b9d,
-        transparent: true,
-        opacity: 0.3,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-      })
-    );
-    ring.rotation.x = Math.PI / 2;
-    ring.position.set(intPos.x, 0.5, intPos.z);
-    seatGroup.add(ring);
-
-    addRoomLabel(root, "Salle d'Interview", "#ff6b9d", intPos.x, 3.1, intPos.z + 2.6, 0);
+    const pickZone = makePickZone("interview", 5, H, 5, intPos.x, H / 2, intPos.z);
+    seatGroup.add(pickZone);
+    roomMeshes.interview = pickZone;
+    root.add(seatGroup);
   }
-  root.add(seatGroup);
-  roomMeshes.interview = seatGroup.children[0] as THREE.Mesh;
-  floorGlow.interview = glowDisc(root, 0xff6b9d, intPos.x, intPos.z, 3.4);
 
-  // ============ SALON ============
+  // ================= SALON (coin TV chaleureux) =================
   const salonPos = ROOM_POS.salon!;
   let panel: THREE.Mesh;
   let panelMat: THREE.MeshBasicMaterial;
   {
-    const sofaMat = new THREE.MeshStandardMaterial({
-      color: 0x5c6b52,
-      roughness: 0.95,
-      metalness: 0.0,
-    });
-    const seat = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.55, 1.1), sofaMat);
-    seat.position.set(salonPos.x, 0.35, salonPos.z + 1.6);
-    root.add(seat);
-    const backrest = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.1, 0.35), sofaMat);
-    backrest.position.set(salonPos.x, 1.0, salonPos.z + 2.15);
-    root.add(backrest);
-    const armL = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.8, 1.1), sofaMat);
-    armL.position.set(salonPos.x - 1.45, 0.55, salonPos.z + 1.6);
-    root.add(armL);
-    const armR = armL.clone();
-    armR.position.x = salonPos.x + 1.45;
-    root.add(armR);
+    // Canapé + 2 fauteuils autour d'une table basse, tapis, lampe
+    const sofa = makeSofa();
+    sofa.position.set(salonPos.x, 0, salonPos.z + 1.4);
+    sofa.rotation.y = Math.PI;
+    root.add(sofa);
+    const arm1 = makeArmchair();
+    arm1.position.set(salonPos.x - 2.0, 0, salonPos.z - 0.6);
+    arm1.rotation.y = Math.PI / 3;
+    root.add(arm1);
+    const arm2 = makeArmchair();
+    arm2.position.set(salonPos.x + 2.0, 0, salonPos.z - 0.6);
+    arm2.rotation.y = -Math.PI / 3;
+    root.add(arm2);
+    const coffee = makeCoffeeTable();
+    coffee.position.set(salonPos.x, 0, salonPos.z - 0.1);
+    root.add(coffee);
+    const rug = makeRug(2.0, 0x8a6a54);
+    rug.position.set(salonPos.x, 0.02, salonPos.z + 0.2);
+    root.add(rug);
+    const lamp = makeFloorLamp();
+    lamp.group.position.set(salonPos.x + 2.4, 0, salonPos.z + 1.8);
+    root.add(lamp.group);
 
-    const tableMat = new THREE.MeshStandardMaterial({
-      color: 0x8a6244,
-      roughness: 0.5,
-      metalness: 0.0,
-    });
-    const table = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.08, 18), tableMat);
-    table.position.set(salonPos.x, 0.55, salonPos.z - 0.4);
-    root.add(table);
-
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.55, 8), tableMat);
-    pole.position.set(salonPos.x, 0.28, salonPos.z - 0.4);
-    root.add(pole);
-
-    panelMat = new THREE.MeshBasicMaterial({
-      color: 0x00e5ff,
-      transparent: true,
-      opacity: 0.22,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    });
-    panel = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 2.1), panelMat);
-    panel.position.set(salonPos.x, 2.2, salonPos.z - 1.2);
+    // Écran holographique discret au-dessus de la table, orienté vers le canapé
+    const holo = makeHoloScreen(1.7, 1.05);
+    panel = holo.mesh;
+    panelMat = holo.mat;
+    panel.position.set(salonPos.x, 1.75, salonPos.z - 1.6);
     root.add(panel);
 
-    const sofaMesh = seat;
-    sofaMesh.userData.pick = { room: "salon", item: null, data: null } as PickRoomFn;
-    pickables.push(sofaMesh);
-    roomMeshes.salon = sofaMesh;
+    const sofaSeat = sofa.children[0] as THREE.Mesh;
+    sofaSeat.userData.pick = { room: "salon", item: null, data: null } as PickRoomFn;
+    pickables.push(sofaSeat);
+    roomMeshes.salon = sofaSeat;
 
-    addRoomLabel(root, "Salon", "#00e5ff", salonPos.x, 3.1, salonPos.z + 2.6, 0);
+    const pickZone = makePickZone("salon", 6, H, 6, salonPos.x, H / 2, salonPos.z);
+    root.add(pickZone);
+    pickables.push(pickZone);
   }
-  floorGlow.salon = glowDisc(root, 0x00e5ff, salonPos.x, salonPos.z, 3.4);
 
-  // ============ CHAMBRE ============
+  // ================= CHAMBRE (lit tête au mur nord, sobre) =================
   const bedPos = ROOM_POS.chambre!;
   let mirror: THREE.Mesh;
   let mirrorMat: THREE.MeshBasicMaterial;
   const traitOrbs: { mesh: THREE.Mesh; mat: THREE.MeshBasicMaterial; color: number; phase: number }[] = [];
   {
-    const bedMat = new THREE.MeshStandardMaterial({
-      color: 0xd8d2c8,
-      roughness: 0.9,
-      metalness: 0.0,
-    });
-    const bedWoodMat = new THREE.MeshStandardMaterial({
-      color: 0x6b4226,
-      roughness: 0.65,
-      metalness: 0.0,
-    });
-    const mattress = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.5, 1.4), bedMat);
-    mattress.position.set(bedPos.x - 1.8, 0.35, bedPos.z);
-    root.add(mattress);
-    const headboard = new THREE.Mesh(new THREE.BoxGeometry(0.25, 1.3, 1.4), bedWoodMat);
-    headboard.position.set(bedPos.x - 3.15, 0.8, bedPos.z);
-    root.add(headboard);
-    const bedFrame = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.25, 1.5), bedWoodMat);
-    bedFrame.position.set(bedPos.x - 1.8, 0.12, bedPos.z);
-    root.add(bedFrame);
+    const bed = makeBed();
+    bed.position.set(bedPos.x - 0.5, 0, bedPos.z - 0.9);
+    root.add(bed);
+    const nightstand = makeNightstand();
+    nightstand.position.set(bedPos.x - 2.2, 0, bedPos.z - 1.3);
+    root.add(nightstand);
+    const lamp = makeFloorLamp();
+    lamp.group.position.set(bedPos.x + 1.6, 0, bedPos.z - 2.0);
+    root.add(lamp.group);
 
-    const frameMat = new THREE.MeshStandardMaterial({
-      color: 0xd4b96a,
-      roughness: 0.4,
-      metalness: 0.6,
-    });
-    mirrorMat = new THREE.MeshBasicMaterial({
-      color: 0x00e5ff,
-      transparent: true,
-      opacity: 0.18,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    });
-    mirror = new THREE.Mesh(new THREE.CircleGeometry(1.05, 24), mirrorMat);
-    mirror.position.set(bedPos.x + 1.2, 1.9, bedPos.z - 2.3);
+    // Miroir mural
+    const wm = makeWallMirror(0.5);
+    mirror = wm.mirror;
+    mirrorMat = wm.mat;
+    mirror.position.set(bedPos.x + 1.6, 1.7, bedPos.z - 2.2);
+    mirror.rotation.y = 0;
     root.add(mirror);
-
-    const mirrorFrame = new THREE.Mesh(new THREE.TorusGeometry(1.1, 0.08, 10, 32), frameMat);
+    const mirrorFrame = wm.frame;
     mirrorFrame.position.copy(mirror.position);
     root.add(mirrorFrame);
 
-    const orbColors = [0xff6b9d, 0xffb300, 0x00ff9d, 0x7c4dff, 0x00e5ff, 0x00ff9d, 0xffb300];
-    for (let i = 0; i < 7; i++) {
-      const color = orbColors[i] ?? 0x00e5ff;
+    // Orbes de traits : petites sphères lumineuses discrètes près du miroir
+    const orbColors = [0xffb3a0, 0xffd28a, 0xa8e8b0, 0xc8a8f0, 0x9ad8e8];
+    for (let i = 0; i < 5; i++) {
+      const color = orbColors[i] ?? 0xffb3a0;
       const orbMat = new THREE.MeshBasicMaterial({
         color,
         transparent: true,
-        opacity: 0.85,
+        opacity: 0.4,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
       });
-      const orb = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 12), orbMat);
-      const angle = (i / 7) * Math.PI * 2;
+      const orb = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 10), orbMat);
+      const a = (i / 5) * Math.PI * 1.4 + 0.4;
       orb.position.set(
-        bedPos.x + 1.2 + Math.cos(angle) * 1.5,
-        1.9 + Math.sin(angle * 2) * 0.35,
-        bedPos.z - 2.3 + Math.sin(angle) * 1.5
+        bedPos.x + 1.6 + Math.cos(a) * 0.75,
+        1.75 + Math.sin(a * 1.3) * 0.3,
+        bedPos.z - 2.2 + Math.sin(a) * 0.3
       );
       root.add(orb);
       traitOrbs.push({ mesh: orb, mat: orbMat, color, phase: i * 0.9 });
     }
 
-    const bedMesh = mattress;
-    bedMesh.userData.pick = { room: "chambre", item: null, data: null } as PickRoomFn;
-    pickables.push(bedMesh);
-    roomMeshes.chambre = bedMesh;
-
-    addRoomLabel(root, "Chambre", "#ff6b9d", bedPos.x, 3.1, bedPos.z + 2.6, 0);
+    const pickZone = makePickZone("chambre", 5, H, 5, bedPos.x, H / 2, bedPos.z);
+    root.add(pickZone);
+    pickables.push(pickZone);
+    roomMeshes.chambre = pickZone;
   }
-  floorGlow.chambre = glowDisc(root, 0xff6b9d, bedPos.x, bedPos.z, 3.4);
 
-  // ============ JARDIN ============
+  // ================= JARDIN / SERRE (derrière la maison) =================
   const gPos = ROOM_POS.jardin!;
   const plants: {
-    group: THREE.Group;
-    baseScale: number;
-    baseY: number;
-    mat: THREE.MeshStandardMaterial;
-    light: THREE.PointLight;
+    group: THREE.Group; baseScale: number; baseY: number;
+    mat: THREE.MeshStandardMaterial; light: THREE.PointLight;
   }[] = [];
   {
-    const soilMat = new THREE.MeshStandardMaterial({
-      color: 0x4a3a2a,
-      roughness: 1.0,
-      metalness: 0.0,
-    });
-    const soil = new THREE.Mesh(new THREE.CylinderGeometry(2.9, 3.1, 0.35, 16), soilMat);
-    soil.position.set(gPos.x, 0.18, gPos.z);
+    // Planche de culture + plantes en pots sur étagère
+    const bed = boxOnFloor(3.2, 0.3, 1.6, MAT.wood, gPos.x, 0, gPos.z - 0.5);
+    root.add(bed);
+    const soil = boxOnFloor(3.0, 0.06, 1.4, MAT.soil, gPos.x, 0.3, gPos.z - 0.5);
     root.add(soil);
 
     const spots = [
-      { x: gPos.x - 1.6, z: gPos.z - 1.2 },
-      { x: gPos.x + 1.4, z: gPos.z - 1.5 },
-      { x: gPos.x - 0.4, z: gPos.z + 1.4 },
-      { x: gPos.x + 1.8, z: gPos.z + 0.9 },
-      { x: gPos.x - 1.9, z: gPos.z + 0.6 },
-      { x: gPos.x + 0.4, z: gPos.z - 2.0 },
+      { x: gPos.x - 1.2, z: gPos.z - 0.9 },
+      { x: gPos.x - 0.4, z: gPos.z - 0.3 },
+      { x: gPos.x + 0.4, z: gPos.z - 0.8 },
+      { x: gPos.x + 1.2, z: gPos.z - 0.2 },
     ];
     for (const sp of spots) {
-      const pg = new THREE.Group();
-      const stemMat = new THREE.MeshStandardMaterial({
-        color: 0x3e8a4a,
-        emissive: 0x0e3a1a,
-        emissiveIntensity: 0.25,
-        roughness: 0.8,
-        metalness: 0.0,
-      });
-      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 1.0, 6), stemMat);
-      stem.position.y = 0.5;
-      pg.add(stem);
-      for (let l = 0; l < 3; l++) {
-        const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 6), stemMat);
-        leaf.scale.set(1.3, 0.35, 0.8);
-        const la = l * 2.1;
-        leaf.position.set(Math.cos(la) * 0.25, 0.45 + l * 0.22, Math.sin(la) * 0.25);
-        leaf.rotation.y = la;
-        pg.add(leaf);
-      }
-      const light = new THREE.PointLight(0xa8e8b0, 0.35, 3.5, 2);
-      light.position.y = 1.0;
-      pg.add(light);
-      pg.position.set(sp.x, 0.35, sp.z);
-      pg.scale.setScalar(0.35);
-      root.add(pg);
-      plants.push({ group: pg, baseScale: 0.35, baseY: 0.35, mat: stemMat, light });
+      const p = makePottedPlant(1.1);
+      p.group.position.set(sp.x, 0.33, sp.z);
+      root.add(p.group);
+      plants.push({ group: p.group, baseScale: 1.1, baseY: 0.33, mat: p.mat, light: p.light });
     }
 
-    const soilMesh = soil;
-    soilMesh.userData.pick = { room: "jardin", item: null, data: null } as PickRoomFn;
-    pickables.push(soilMesh);
-    roomMeshes.jardin = soilMesh;
+    // Étagère à pots sur le mur du fond
+    const potShelf = boxOnFloor(2.2, 0.05, 0.35, MAT.wood, gPos.x, 0.9, gPos.z - 2.6);
+    root.add(potShelf);
+    for (const dx of [-0.7, 0, 0.7]) {
+      const p = makePottedPlant(0.8);
+      p.group.position.set(gPos.x + dx, 0.95, gPos.z - 2.6);
+      root.add(p.group);
+      plants.push({ group: p.group, baseScale: 0.8, baseY: 0.95, mat: p.mat, light: p.light });
+    }
 
-    addRoomLabel(root, "Jardin", "#00ff9d", gPos.x, 3.0, gPos.z + 2.2, 0);
+    const pickZone = makePickZone("jardin", 6, H, 5, gPos.x, H / 2, gPos.z);
+    root.add(pickZone);
+    pickables.push(pickZone);
+    roomMeshes.jardin = pickZone;
   }
-  floorGlow.jardin = glowDisc(root, 0x00ff9d, gPos.x, gPos.z, 3.4);
 
   return {
     root,
     pickables,
     roomMeshes,
     floorGlow,
-    brain: {
-      root: brainRoot,
-      brainMesh,
-      neurons,
-      pulses,
-      pulseMat,
-    },
-    library: { roots: libRoots, bookMats, newGlow: newGlowMat },
+    brain: { root: brainRoot, brainMesh, neurons, pulses, pulseMat },
+    library: { roots: libShelfGroups, bookMats, newGlow: null },
     interview: { seat: seatGroup, mats: seatMats, seatMesh },
     salon: { panel, panelMat },
     chambre: { mirror, mirrorMat, orbs: traitOrbs },

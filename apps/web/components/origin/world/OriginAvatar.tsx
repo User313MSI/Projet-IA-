@@ -25,34 +25,34 @@ export interface OriginAvatar {
 }
 
 const WAYPOINTS = [
-  { room: "salon", pos: new THREE.Vector3(0, 1.75, 2) },
-  { room: "salon", pos: new THREE.Vector3(-3, 1.75, 5) },
-  { room: "brain", pos: new THREE.Vector3(-9.8, 1.75, 4.5) },
-  { room: "interview", pos: new THREE.Vector3(9.8, 2.0, 4.5) },
-  { room: "library", pos: new THREE.Vector3(-6.5, 1.75, -5.5) },
-  { room: "chambre", pos: new THREE.Vector3(6.5, 1.75, -5.5) },
-  { room: "jardin", pos: new THREE.Vector3(0, 1.9, -13) },
+  { room: "salon", pos: new THREE.Vector3(0, 1.6, 2.2) },
+  { room: "salon", pos: new THREE.Vector3(-2.5, 1.6, 4.5) },
+  { room: "brain", pos: new THREE.Vector3(-6.8, 1.6, 2.8) },
+  { room: "interview", pos: new THREE.Vector3(6.8, 1.7, 2.8) },
+  { room: "library", pos: new THREE.Vector3(-4.5, 1.6, -3.8) },
+  { room: "chambre", pos: new THREE.Vector3(4.5, 1.6, -3.8) },
+  { room: "jardin", pos: new THREE.Vector3(0, 1.6, -9.0) },
 ];
 
 // Segments de cloisons à éviter (même plan que la navigation caméra)
 const AVATAR_WALLS: { x1: number; z1: number; x2: number; z2: number }[] = [
-  { x1: -13.4, z1: -3.3, x2: -5.6, z2: -2.7 },
-  { x1: -4, z1: -3.3, x2: 4, z2: -2.7 },
-  { x1: 5.6, z1: -3.3, x2: 13.4, z2: -2.7 },
-  { x1: 6.2, z1: -3, x2: 6.8, z2: 4 },
-  { x1: 6.2, z1: 5.6, x2: 6.8, z2: 9 },
-  { x1: -6.8, z1: -3, x2: -6.2, z2: 4 },
-  { x1: -6.8, z1: 5.6, x2: -6.2, z2: 9 },
-  { x1: -0.25, z1: -11, x2: 0.25, z2: -3 },
+  { x1: -9.2, z1: -1.8, x2: -5.0, z2: -1.2 },
+  { x1: -4.0, z1: -1.8, x2: 4.0, z2: -1.2 },
+  { x1: 5.0, z1: -1.8, x2: 9.2, z2: -1.2 },
+  { x1: 4.2, z1: -1.5, x2: 4.8, z2: 1.0 },
+  { x1: 4.2, z1: 2.2, x2: 4.8, z2: 6.8 },
+  { x1: -4.8, z1: -1.5, x2: -4.2, z2: 1.0 },
+  { x1: -4.8, z1: 2.2, x2: -4.2, z2: 6.8 },
+  { x1: -0.2, z1: -6.8, x2: 0.2, z2: -1.5 },
 ];
-// Nœuds-portes : salon ↔ pièces arrière (x=±4.8), salon ↔ pièces avant,
-// maison ↔ serre (porte vitrée)
+// Nœuds-portes : salon ↔ pièces arrière (x=±4.5), salon ↔ pièces avant,
+// maison ↔ serre (baie vitrée)
 const DOOR_NODES = [
-  new THREE.Vector3(-4.8, 1.75, -3),
-  new THREE.Vector3(4.8, 1.75, -3),
-  new THREE.Vector3(-6.5, 1.75, 4.8),
-  new THREE.Vector3(6.5, 1.75, 4.8),
-  new THREE.Vector3(0, 1.75, -10.4),
+  new THREE.Vector3(-4.5, 1.6, -1.5),
+  new THREE.Vector3(4.5, 1.6, -1.5),
+  new THREE.Vector3(-4.5, 1.6, 1.6),
+  new THREE.Vector3(4.5, 1.6, 1.6),
+  new THREE.Vector3(0, 1.6, -6.5),
 ];
 
 export function createOriginAvatar(scene: THREE.Scene): OriginAvatar {

@@ -682,3 +682,41 @@ La signature « Origin » reste portée par l'orbe cyan-violet, les hologrammes 
 - `pnpm typecheck` : ✅
 - `pnpm build` : ✅
 - `pnpm test` : ✅ 97 tests verts
+
+---
+
+## Aurora — 2026-09-18 — Audit + changement de méthode : kit paramétrique, échelle humaine, épuré
+
+**Rôle :** Monde Virtuel d'Origin — la Maison
+
+**Contexte :** retour utilisateur dur mais juste — résultat « serré, bizarre, moche ». Audit de méthode effectué.
+
+### Audit (les vraies causes)
+1. Des centaines de BoxGeometry codées à la main avec des nombres magiques → proportions incohérentes
+2. Échelle fausse : maison de 26×20 m (520 m²) avec meubles fantaisistes → vide ET étriqué à la fois
+3. Trop d'objets décoratifs (disques lumineux, labels flottants, plinthes LED) → brouillon
+
+### Nouvelle méthode
+- **`kit.ts` (nouveau)** : kit paramétrique — palette de matériaux unique (MAT), primitives `box`/`boxOnFloor`, et meubles aux **dimensions réelles du marché** : canapé 1.80×0.85, fauteuil 0.85, lit 1.70×2.00, bibliothèque 1.2×2.0×0.3, lampe 1.45 m, table Ø0.9
+- **Maison à échelle humaine** : 18×13 m, plafond 3.2 m, porte 1.1 m, portes intérieures 0.95 m
+- **Plan épuré** : 3 cloisons seulement (Z=-1.5 avec 2 portes, X=±4.5 avant avec portes, X=0 arrière), encadrements de portes blancs
+- **-60% d'objets** : suppression des disques lumineux au sol, labels flottants, plinthes LED, liserés ; sélection par zones invisibles cliquables
+- Serre compacte accolée (4.6×5.5 m) avec soubassement pierre, montants blancs, pente unique
+
+### Pièces (mobilier cohérent, chacune sa fonction lisible)
+- Cerveau : bureau bois, cerveau 0.5 m au-dessus, bibliothèque d'appoint + fauteuil de lecture
+- Bibliothèque : 3 bibliothèques 4 étagères (96 places de livres), table de lecture + 2 chaises + lampe
+- Interview : 2 fauteuils face à face + table basse + tapis
+- Salon : canapé + 2 fauteuils + table basse + tapis + lampe + écran holographique discret
+- Chambre : lit + chevet + lampe + miroir doré + 5 orbes de traits discrets
+- Jardin/serre : planche de culture + plantes en pots + étagère à pots
+
+### Adaptations
+- Collisions caméra + murs avatar + nœuds-portes recalés au nouveau plan
+- `applyLibraryData` : livres 5.5×30×17 cm posés dans les étagères du kit (plus de positions magiques)
+- Lumières, vues caméra, waypoints, lucioles recalés à la nouvelle échelle
+
+### Vérifications
+- `pnpm typecheck` : ✅
+- `pnpm build` : ✅ (`/origin/maison` : 3.04 kB)
+- `pnpm test` : ✅ 97 tests verts

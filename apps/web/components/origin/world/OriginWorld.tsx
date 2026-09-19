@@ -30,12 +30,12 @@ export interface SelectionState {
 }
 
 const VIEW_EXTERIOR: { pos: [number, number, number]; look: [number, number, number] } = {
-  pos: [0, 4.2, 24],
-  look: [0, 2.8, 0],
+  pos: [0, 3.4, 15],
+  look: [0, 2.2, 0],
 };
 const VIEW_INTERIOR: { pos: [number, number, number]; look: [number, number, number] } = {
-  pos: [0, 2.6, 5],
-  look: [0, 2.2, -8],
+  pos: [0, 2.2, 4],
+  look: [0, 1.8, -4],
 };
 
 interface RoomView {
@@ -44,12 +44,12 @@ interface RoomView {
 }
 
 const ROOM_VIEWS: Record<string, RoomView> = {
-  salon: { camPos: [0, 2.2, 7], lookAt: [0, 1.6, 1] },
-  brain: { camPos: [-6.2, 2.2, 6], lookAt: [-9.8, 1.8, 3] },
-  interview: { camPos: [6.2, 2.2, 6], lookAt: [9.8, 1.4, 3] },
-  library: { camPos: [-3.2, 2.2, -4.6], lookAt: [-6.5, 1.8, -7] },
-  chambre: { camPos: [3.2, 2.2, -4.6], lookAt: [6.5, 1.6, -7] },
-  jardin: { camPos: [0, 2.3, -12.2], lookAt: [0, 1.0, -14.5] },
+  salon: { camPos: [0, 2.0, 4.6], lookAt: [0, 1.4, 0.5] },
+  brain: { camPos: [-4.0, 2.0, 3.4], lookAt: [-6.8, 1.4, 2.6] },
+  interview: { camPos: [4.0, 2.0, 3.4], lookAt: [6.8, 1.2, 2.6] },
+  library: { camPos: [-2.2, 2.0, -2.6], lookAt: [-4.5, 1.4, -4.0] },
+  chambre: { camPos: [2.2, 2.0, -2.6], lookAt: [4.5, 1.2, -4.0] },
+  jardin: { camPos: [0, 2.0, -6.9], lookAt: [0, 0.9, -9.2] },
 };
 
 function shorten(text: string, max: number): string {
@@ -98,18 +98,18 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
       const moon2 = new THREE.DirectionalLight(0x8fa3bd, 0.3);
       moon2.position.set(-18, 14, -24);
       scene.add(moon2);
-      // Lueur chaude émise par les fenêtres (comme une maison habitée)
-      const interior = new THREE.PointLight(0xffc98a, 1.2, 42, 1.6);
-      interior.position.set(0, 5.2, -1);
+      // Lueur chaude de la maison habitée
+      const interior = new THREE.PointLight(0xffc98a, 1.1, 24, 1.5);
+      interior.position.set(0, 2.6, 0);
       scene.add(interior);
-      const warmCorner = new THREE.PointLight(0xffb37a, 0.7, 16, 2);
-      warmCorner.position.set(6.5, 3.2, -7);
+      const warmCorner = new THREE.PointLight(0xffb37a, 0.6, 10, 2);
+      warmCorner.position.set(4.5, 2.4, -4.0);
       scene.add(warmCorner);
-      const gardenLight = new THREE.PointLight(0xa8d8b0, 0.7, 14, 2);
-      gardenLight.position.set(0, 3.0, -14);
+      const gardenLight = new THREE.PointLight(0xa8d8b0, 0.5, 9, 2);
+      gardenLight.position.set(0, 2.4, -9.2);
       scene.add(gardenLight);
-      const brainLight = new THREE.PointLight(0xd8e8ff, 0.8, 12, 2);
-      brainLight.position.set(-9.8, 3.4, 3);
+      const brainLight = new THREE.PointLight(0xd8c8f0, 0.5, 8, 2);
+      brainLight.position.set(-6.8, 2.4, 2.6);
       scene.add(brainLight);
 
       // ---------- Ciel étoilé ----------
@@ -195,9 +195,9 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
       const ffPos = new Float32Array(fireflyCount * 3);
       const ffSeed = new Float32Array(fireflyCount * 3);
       for (let i = 0; i < fireflyCount; i++) {
-        ffPos[i * 3] = (Math.random() - 0.5) * 40;
-        ffPos[i * 3 + 1] = 0.5 + Math.random() * 5;
-        ffPos[i * 3 + 2] = (Math.random() - 0.5) * 44 - 4;
+        ffPos[i * 3] = (Math.random() - 0.5) * 28;
+        ffPos[i * 3 + 1] = 0.4 + Math.random() * 4;
+        ffPos[i * 3 + 2] = (Math.random() - 0.5) * 30 - 3;
         ffSeed[i * 3] = Math.random() * Math.PI * 2;
         ffSeed[i * 3 + 1] = 0.2 + Math.random() * 0.5;
         ffSeed[i * 3 + 2] = 0.3 + Math.random() * 0.7;
@@ -231,7 +231,7 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
       const avatar = createOriginAvatar(scene);
       const avatarWorld = {
         roomCenters: Object.fromEntries(Object.entries(ROOM_POS).map(([k, p]) => [k, new THREE.Vector3(p.x, 1.8, p.z)])),
-        gardenCenter: new THREE.Vector3(0, 1.4, -14),
+        gardenCenter: new THREE.Vector3(0, 1.4, -9.2),
       };
       const cameraPosRef = { current: new THREE.Vector3(...VIEW_EXTERIOR.pos) };
       const avatarAnim = createAvatarAnimation(avatar, avatarWorld, cameraPosRef);
@@ -427,43 +427,43 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
           view.pos.add(dir);
         }
 
-        // Limites du terrain : plateforme rectangulaire 33 x 34 centrée sur la maison
-        view.pos.x = Math.max(-16.5, Math.min(16.5, view.pos.x));
-        view.pos.z = Math.max(-18, Math.min(15.5, view.pos.z));
+        // Limites du terrain : jardin autour de la maison
+        view.pos.x = Math.max(-15, Math.min(15, view.pos.x));
+        view.pos.z = Math.max(-14, Math.min(13, view.pos.z));
         if (view.pos.y < 1.2) view.pos.y = 1.2;
-        if (view.pos.y > 14) view.pos.y = 14;
+        if (view.pos.y > 10) view.pos.y = 10;
 
         // Murs de la maison : collision simple par segments bloquants
         // Chaque segment = rectangle (x1..x2, z1..z2) ; la caméra est repoussée si elle y entre
         const walls: { x1: number; z1: number; x2: number; z2: number }[] = insideRef.current
           ? [
-              // cloison transversale Z=-3, 2 portes (x=-4.8 et 4.8, largeur 1.6)
-              { x1: -13.4, z1: -3.35, x2: -5.6, z2: -2.65 },
-              { x1: -4, z1: -3.35, x2: 4, z2: -2.65 },
-              { x1: 5.6, z1: -3.35, x2: 13.4, z2: -2.65 },
-              // cloisons longitudinales avant X=±6.5, porte près de la façade (Z 4→5.6)
-              { x1: 6.15, z1: -3, x2: 6.85, z2: 4 },
-              { x1: 6.15, z1: 5.6, x2: 6.85, z2: 9 },
-              { x1: -6.85, z1: -3, x2: -6.15, z2: 4 },
-              { x1: -6.85, z1: 5.6, x2: -6.15, z2: 9 },
+              // cloison transversale Z=-1.5, 2 portes (x=-4.5 et 4.5, largeur 0.95)
+              { x1: -9.2, z1: -1.8, x2: -5.0, z2: -1.2 },
+              { x1: -4.0, z1: -1.8, x2: 4.0, z2: -1.2 },
+              { x1: 5.0, z1: -1.8, x2: 9.2, z2: -1.2 },
+              // cloisons longitudinales avant X=±4.5, porte près de la façade (Z 1.0→2.2)
+              { x1: 4.2, z1: -1.5, x2: 4.8, z2: 1.0 },
+              { x1: 4.2, z1: 2.2, x2: 4.8, z2: 6.8 },
+              { x1: -4.8, z1: -1.5, x2: -4.2, z2: 1.0 },
+              { x1: -4.8, z1: 2.2, x2: -4.2, z2: 6.8 },
               // cloison centrale arrière X=0, pleine
-              { x1: -0.2, z1: -11, x2: 0.2, z2: -3 },
-              // mur arrière avec porte vitrée vers la serre (x∈[-2,2])
-              { x1: -13.4, z1: -11.4, x2: -2, z2: -10.65 },
-              { x1: 2, z1: -11.4, x2: 13.4, z2: -10.65 },
+              { x1: -0.2, z1: -6.8, x2: 0.2, z2: -1.5 },
+              // mur arrière avec baie vitrée vers la serre (x∈[-1.5,1.5])
+              { x1: -9.2, z1: -6.8, x2: -1.5, z2: -6.2 },
+              { x1: 1.5, z1: -6.8, x2: 9.2, z2: -6.2 },
             ]
           : [
-              // dehors : murs extérieurs solides (sauf porte d'entrée et porte vitrée de la serre)
-              { x1: -13.4, z1: 9.05, x2: -0.85, z2: 9.4 },
-              { x1: 0.85, z1: 9.05, x2: 13.4, z2: 9.4 },
-              { x1: -13.4, z1: -11.4, x2: -12.8, z2: 9.4 },
-              { x1: 12.8, z1: -11.4, x2: 13.4, z2: 9.4 },
-              { x1: -13.4, z1: -11.4, x2: -2, z2: -10.6 },
-              { x1: 2, z1: -11.4, x2: 13.4, z2: -10.6 },
-              // serre : murs vitrés
-              { x1: -5.2, z1: -17.4, x2: -4.8, z2: -10.6 },
-              { x1: 4.8, z1: -17.4, x2: 5.2, z2: -10.6 },
-              { x1: -5.2, z1: -17.4, x2: 5.2, z2: -16.9 },
+              // dehors : murs extérieurs solides (sauf porte d'entrée et baie de la serre)
+              { x1: -9.2, z1: 6.35, x2: -0.7, z2: 6.8 },
+              { x1: 0.7, z1: 6.35, x2: 9.2, z2: 6.8 },
+              { x1: -9.2, z1: -6.8, x2: -8.8, z2: 6.8 },
+              { x1: 8.8, z1: -6.8, x2: 9.2, z2: 6.8 },
+              { x1: -9.2, z1: -6.8, x2: -1.5, z2: -6.2 },
+              { x1: 1.5, z1: -6.8, x2: 9.2, z2: -6.2 },
+              // serre : parois vitrées (largeur totale 4.6 → x∈[-2.3,2.3])
+              { x1: -2.6, z1: -12.2, x2: -2.2, z2: -6.5 },
+              { x1: 2.2, z1: -12.2, x2: 2.6, z2: -6.5 },
+              { x1: -2.6, z1: -12.2, x2: 2.6, z2: -11.8 },
             ];
         for (const wSeg of walls) {
           if (
@@ -490,10 +490,10 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
         // Une fois à l'intérieur, on reste à l'intérieur (les murs ext bloquent aussi)
         // La serre (jardin) derrière la maison est incluse dans la zone
         if (insideRef.current) {
-          view.pos.x = Math.max(-12.8, Math.min(12.8, view.pos.x));
-          const inGreenhouse = view.pos.z < -10.2 && Math.abs(view.pos.x) < 5;
-          view.pos.z = Math.max(inGreenhouse ? -16.5 : -10.6, Math.min(8.6, view.pos.z));
-          if (view.pos.z < -10.2 && Math.abs(view.pos.x) >= 5) view.pos.z = -10.2;
+          view.pos.x = Math.max(-8.7, Math.min(8.7, view.pos.x));
+          const inGreenhouse = view.pos.z < -6.2 && Math.abs(view.pos.x) < 2.2;
+          view.pos.z = Math.max(inGreenhouse ? -11.8 : -6.2, Math.min(6.3, view.pos.z));
+          if (view.pos.z < -6.2 && Math.abs(view.pos.x) >= 2.2) view.pos.z = -6.2;
         }
 
         // Look
@@ -520,7 +520,7 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
             const pulse = rooms.brain.pulses[i]!;
             const seed = (pulse.userData.seed as number) ?? i;
             const a = t * 0.8 + seed * 2.39;
-            const radius = 1.55 + Math.sin(t * 1.7 + seed) * 0.18;
+            const radius = 0.62 + Math.sin(t * 1.7 + seed) * 0.1;
             pulse.position.set(
               rooms.brain.brainMesh.position.x + Math.cos(a) * radius,
               rooms.brain.brainMesh.position.y + Math.sin(a * 0.8) * 0.5,
@@ -675,38 +675,31 @@ export function applyLibraryData(rooms: RoomsLayout, documents: Document[]): voi
   }
   rooms.library!.bookMats.length = 0;
 
-  const shelfConfigs = [
-    { face: "left", count: 0, max: 14 },
-    { face: "right", count: 0, max: 14 },
-    { face: "back", count: 0, max: 14 },
-  ];
+  // 3 bibliothèques × 4 étagères × 8 places = 96 emplacements de livres
+  const shelfSlots = rooms.library!.roots.length * 8;
 
-  documents.slice(0, 42).forEach((doc, idx) => {
+  documents.slice(0, shelfSlots).forEach((doc, idx) => {
     const typeInfo = DOC_TYPE_INFO[doc.type] ?? DOC_TYPE_INFO.note!;
-    const shelf = shelfConfigs[idx % 3]!;
-    if (shelf.count >= shelf.max) return;
-    shelf.count++;
-
     const isNew = Date.now() - doc.addedAt < 5 * 60 * 1000;
     const mat = new THREE.MeshStandardMaterial({
       color: typeInfo.color,
       emissive: typeInfo.color,
-      emissiveIntensity: isNew ? 1.4 : 0.55,
+      emissiveIntensity: isNew ? 1.2 : 0.4,
       roughness: 0.5,
       metalness: 0.1,
     });
     rooms.library!.bookMats.push(mat);
-    const book = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.6, 0.16), mat);
-    const slot = shelf.count - 1;
-    const row = Math.floor(slot / 7);
-    const col = slot % 7;
+    const book = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.30, 0.17), mat);
+    const perShelf = 8;
+    const shelfIndex = Math.floor(idx / perShelf);
+    const col = idx % perShelf;
 
-    let lx = 0; let ly = 0; let lz = 0; let shelfIndex = idx % 3;
-    if (shelfIndex === 0) { lx = -2.1 + col * 0.5; ly = 1.0 + row * 1.25; lz = 0.38; }
-    else if (shelfIndex === 1) { lx = 2.1 - col * 0.5; ly = 1.0 + row * 1.25; lz = 0.38; }
-    else { lx = -2.1 + col * 0.5; ly = 1.0 + row * 1.25; lz = 0.38; }
+    // Les étagères sont des groupes positionnés dans le kit (y = dessus de l'étagère)
+    const lx = -0.49 + col * 0.14;
+    const ly = 0.0;
+    const lz = 0.02;
 
-    const group = rooms.library!.roots[shelfIndex]!;
+    const group = rooms.library!.roots[Math.min(shelfIndex, rooms.library!.roots.length - 1)]!;
     book.position.set(lx, ly, lz);
     book.userData.bookId = doc.id;
     book.userData.doc = doc;
@@ -735,8 +728,8 @@ export function applyInterviewData(rooms: RoomsLayout, questions: InterviewQuest
       depthWrite: false,
     });
     rooms.interview!.mats.push(mat);
-    const bubble = new THREE.Mesh(new THREE.SphereGeometry(0.3 + i * 0.12, 14, 14), mat);
-    bubble.position.set(0.6 + i * 0.5, 2.3 + i * 0.45, 0);
+    const bubble = new THREE.Mesh(new THREE.SphereGeometry(0.16 + i * 0.05, 12, 12), mat);
+    bubble.position.set((i - 1) * 0.55, 1.85 + i * 0.25, 0);
     bubble.userData.questionBubble = true;
     bubble.userData.pick = { room: "interview", item: q.id, data: q } as never;
     seat.add(bubble);
@@ -744,13 +737,13 @@ export function applyInterviewData(rooms: RoomsLayout, questions: InterviewQuest
 }
 
 export function applyGardenData(rooms: RoomsLayout, growth: number): void {
-  const scale = Math.min(1, 0.35 + growth);
+  const scale = Math.min(1, 0.3 + growth);
   rooms.jardin!.plants.forEach((plant, i) => {
     const jitter = 0.85 + ((i * 37) % 10) / 30;
-    const target = plant.baseScale * scale * jitter;
+    const target = plant.baseScale * (0.3 + scale * 0.7) * jitter;
     plant.group.scale.setScalar(target);
-    plant.light.intensity = 0.3 + scale * 0.5;
-    plant.mat.emissiveIntensity = 0.5 + scale * 0.8;
+    plant.light.intensity = 0.15 + scale * 0.3;
+    plant.mat.emissiveIntensity = 0.1 + scale * 0.25;
   });
 }
 
