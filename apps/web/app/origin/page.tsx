@@ -228,6 +228,31 @@ export default function OriginPage() {
           </span>
         </h1>
         <div style={{ marginLeft: "auto", display: "flex", gap: "6px", flexWrap: "wrap" }} role="tablist" aria-label="Sections d'Origin">
+          <a
+            href="/origin/maison"
+            style={{
+              padding: "9px 16px",
+              borderRadius: "10px",
+              border: "1px solid #00ff9d55",
+              background: "linear-gradient(135deg, rgba(0,229,255,0.12), rgba(124,77,255,0.12))",
+              color: "#00ff9d",
+              cursor: "pointer",
+              fontSize: "13px",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.8px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "7px",
+              textDecoration: "none",
+              transition: "all 0.25s var(--ease-smooth)",
+              boxShadow: "0 0 16px rgba(0,255,157,0.15)",
+              fontFamily: "var(--display)",
+            }}
+          >
+            <span style={{ fontSize: "15px" }}>🏠</span>
+            Maison
+          </a>
           {(["brain", "interview", "personality", "knowledge"] as const).map((tab) => {
             const labels: Record<string, { icon: string; text: string; badge?: number; color: string }> = {
               brain: { icon: "🧠", text: "Cerveau", color: "#7c4dff" },
