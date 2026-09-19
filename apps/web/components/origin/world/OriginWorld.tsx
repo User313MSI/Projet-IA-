@@ -30,12 +30,12 @@ export interface SelectionState {
 }
 
 const VIEW_EXTERIOR: { pos: [number, number, number]; look: [number, number, number] } = {
-  pos: [0, 4.5, 23],
-  look: [0, 3, 0],
+  pos: [0, 4.2, 24],
+  look: [0, 2.8, 0],
 };
 const VIEW_INTERIOR: { pos: [number, number, number]; look: [number, number, number] } = {
-  pos: [0, 3.4, 2.2],
-  look: [0, 2.6, -14],
+  pos: [0, 2.6, 5],
+  look: [0, 2.2, -8],
 };
 
 interface RoomView {
@@ -44,12 +44,12 @@ interface RoomView {
 }
 
 const ROOM_VIEWS: Record<string, RoomView> = {
-  brain: { camPos: [-9.2, 2.6, -2.0], lookAt: [-13.5, 2.2, -6] },
-  library: { camPos: [-4.5, 2.7, -9.4], lookAt: [-4.5, 2.2, -14] },
-  interview: { camPos: [9.2, 2.6, -2.0], lookAt: [13.5, 1.6, -6] },
-  salon: { camPos: [4.5, 2.7, -9.4], lookAt: [4.5, 2.2, -14] },
-  chambre: { camPos: [-4.5, 2.7, -17.2], lookAt: [-4.5, 1.8, -21.5] },
-  jardin: { camPos: [4.5, 2.7, -17.2], lookAt: [4.5, 1.4, -21.5] },
+  salon: { camPos: [0, 2.2, 7], lookAt: [0, 1.6, 1] },
+  brain: { camPos: [-6.2, 2.2, 6], lookAt: [-9.8, 1.8, 3] },
+  interview: { camPos: [6.2, 2.2, 6], lookAt: [9.8, 1.4, 3] },
+  library: { camPos: [-3.2, 2.2, -4.6], lookAt: [-6.5, 1.8, -7] },
+  chambre: { camPos: [3.2, 2.2, -4.6], lookAt: [6.5, 1.6, -7] },
+  jardin: { camPos: [0, 2.3, -12.2], lookAt: [0, 1.0, -14.5] },
 };
 
 function shorten(text: string, max: number): string {
@@ -99,16 +99,16 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
       moon2.position.set(-18, 14, -24);
       scene.add(moon2);
       const interior = new THREE.PointLight(0x7c4dff, 1.0, 42, 1.6);
-      interior.position.set(0, 6.5, -14);
+      interior.position.set(0, 5.2, -1);
       scene.add(interior);
-      const warmCorner = new THREE.PointLight(0xff6b9d, 0.5, 16, 2);
-      warmCorner.position.set(4.5, 3.2, -14);
+      const warmCorner = new THREE.PointLight(0xff6b9d, 0.6, 16, 2);
+      warmCorner.position.set(6.5, 3.2, -7);
       scene.add(warmCorner);
-      const gardenLight = new THREE.PointLight(0x00ff9d, 0.5, 14, 2);
-      gardenLight.position.set(4.5, 3.0, -21.5);
+      const gardenLight = new THREE.PointLight(0x00ff9d, 0.7, 14, 2);
+      gardenLight.position.set(0, 3.0, -14);
       scene.add(gardenLight);
-      const brainLight = new THREE.PointLight(0x7c4dff, 0.7, 12, 2);
-      brainLight.position.set(-13.5, 3.4, -6);
+      const brainLight = new THREE.PointLight(0x7c4dff, 0.8, 12, 2);
+      brainLight.position.set(-9.8, 3.4, 3);
       scene.add(brainLight);
 
       // ---------- Ciel étoilé ----------
@@ -230,7 +230,7 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
       const avatar = createOriginAvatar(scene);
       const avatarWorld = {
         roomCenters: Object.fromEntries(Object.entries(ROOM_POS).map(([k, p]) => [k, new THREE.Vector3(p.x, 1.8, p.z)])),
-        gardenCenter: new THREE.Vector3(4.5, 1.4, -21.5),
+        gardenCenter: new THREE.Vector3(0, 1.4, -14),
       };
       const cameraPosRef = { current: new THREE.Vector3(...VIEW_EXTERIOR.pos) };
       const avatarAnim = createAvatarAnimation(avatar, avatarWorld, cameraPosRef);
@@ -299,10 +299,10 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
         pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
         pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
         raycaster.setFromCamera(pointer, camera);
-        const hits = raycaster.intersectObjects([layout.door!, layout.doorRing!, ...rooms.pickables], true);
+        const hits = raycaster.intersectObjects([layout.door!, ...rooms.pickables], true);
         if (hits.length > 0) {
           const first = hits[0]!.object;
-          if (first === layout.door || first === layout.doorRing) {
+          if (first === layout.door) {
             doorOpenRef.current = !doorOpenRef.current;
             if (doorOpenRef.current && !insideRef.current) {
               enterHouse();
@@ -426,18 +426,74 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
           view.pos.add(dir);
         }
 
-        // Limites de la plateforme
-        const r = Math.hypot(view.pos.x, view.pos.z + 8);
-        if (r > 22.5) {
-          const s = 22.5 / r;
-          view.pos.x *= s;
-          view.pos.z = (view.pos.z + 8) * s - 8;
-        }
+        // Limites du terrain : plateforme rectangulaire 33 x 34 centrée sur la maison
+        view.pos.x = Math.max(-16.5, Math.min(16.5, view.pos.x));
+        view.pos.z = Math.max(-18, Math.min(15.5, view.pos.z));
         if (view.pos.y < 1.2) view.pos.y = 1.2;
         if (view.pos.y > 14) view.pos.y = 14;
 
-        // Intérieur : ne pas traverser la paroi arrière
-        if (insideRef.current && view.pos.z < -28) view.pos.z = -28;
+        // Murs de la maison : collision simple par segments bloquants
+        // Chaque segment = rectangle (x1..x2, z1..z2) ; la caméra est repoussée si elle y entre
+        const walls: { x1: number; z1: number; x2: number; z2: number }[] = insideRef.current
+          ? [
+              // cloison transversale Z=-3, 2 portes (x=-4.8 et 4.8, largeur 1.6)
+              { x1: -13.4, z1: -3.35, x2: -5.6, z2: -2.65 },
+              { x1: -4, z1: -3.35, x2: 4, z2: -2.65 },
+              { x1: 5.6, z1: -3.35, x2: 13.4, z2: -2.65 },
+              // cloisons longitudinales avant X=±6.5, porte près de la façade (Z 4→5.6)
+              { x1: 6.15, z1: -3, x2: 6.85, z2: 4 },
+              { x1: 6.15, z1: 5.6, x2: 6.85, z2: 9 },
+              { x1: -6.85, z1: -3, x2: -6.15, z2: 4 },
+              { x1: -6.85, z1: 5.6, x2: -6.15, z2: 9 },
+              // cloison centrale arrière X=0, pleine
+              { x1: -0.2, z1: -11, x2: 0.2, z2: -3 },
+              // mur arrière avec porte vitrée vers la serre (x∈[-2,2])
+              { x1: -13.4, z1: -11.4, x2: -2, z2: -10.65 },
+              { x1: 2, z1: -11.4, x2: 13.4, z2: -10.65 },
+            ]
+          : [
+              // dehors : murs extérieurs solides (sauf porte d'entrée et porte vitrée de la serre)
+              { x1: -13.4, z1: 9.05, x2: -0.85, z2: 9.4 },
+              { x1: 0.85, z1: 9.05, x2: 13.4, z2: 9.4 },
+              { x1: -13.4, z1: -11.4, x2: -12.8, z2: 9.4 },
+              { x1: 12.8, z1: -11.4, x2: 13.4, z2: 9.4 },
+              { x1: -13.4, z1: -11.4, x2: -2, z2: -10.6 },
+              { x1: 2, z1: -11.4, x2: 13.4, z2: -10.6 },
+              // serre : murs vitrés
+              { x1: -5.2, z1: -17.4, x2: -4.8, z2: -10.6 },
+              { x1: 4.8, z1: -17.4, x2: 5.2, z2: -10.6 },
+              { x1: -5.2, z1: -17.4, x2: 5.2, z2: -16.9 },
+            ];
+        for (const wSeg of walls) {
+          if (
+            view.pos.x > wSeg.x1 - 0.25 && view.pos.x < wSeg.x2 + 0.25 &&
+            view.pos.z > wSeg.z1 - 0.25 && view.pos.z < wSeg.z2 + 0.25
+          ) {
+            // repousser hors du segment par l'axe le plus proche
+            const dxMin = Math.min(
+              Math.abs(view.pos.x - (wSeg.x1 - 0.25)),
+              Math.abs(view.pos.x - (wSeg.x2 + 0.25))
+            );
+            const dzMin = Math.min(
+              Math.abs(view.pos.z - (wSeg.z1 - 0.25)),
+              Math.abs(view.pos.z - (wSeg.z2 + 0.25))
+            );
+            if (dxMin < dzMin) {
+              view.pos.x = view.pos.x < (wSeg.x1 + wSeg.x2) / 2 ? wSeg.x1 - 0.26 : wSeg.x2 + 0.26;
+            } else {
+              view.pos.z = view.pos.z < (wSeg.z1 + wSeg.z2) / 2 ? wSeg.z1 - 0.26 : wSeg.z2 + 0.26;
+            }
+          }
+        }
+
+        // Une fois à l'intérieur, on reste à l'intérieur (les murs ext bloquent aussi)
+        // La serre (jardin) derrière la maison est incluse dans la zone
+        if (insideRef.current) {
+          view.pos.x = Math.max(-12.8, Math.min(12.8, view.pos.x));
+          const inGreenhouse = view.pos.z < -10.2 && Math.abs(view.pos.x) < 5;
+          view.pos.z = Math.max(inGreenhouse ? -16.5 : -10.6, Math.min(8.6, view.pos.z));
+          if (view.pos.z < -10.2 && Math.abs(view.pos.x) >= 5) view.pos.z = -10.2;
+        }
 
         // Look
         const lookDir = new THREE.Vector3(

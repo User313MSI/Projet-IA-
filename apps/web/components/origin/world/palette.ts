@@ -17,21 +17,29 @@ export const COLORS = {
 } as const;
 
 export const ROOMS = {
-  brain: { x: -13.5, z: -6 },
-  library: { x: -4.5, z: -14 },
-  interview: { x: 13.5, z: -6 },
-  salon: { x: 4.5, z: -14 },
-  chambre: { x: -4.5, z: -21.5 },
-  jardin: { x: 4.5, z: -21.5 },
+  salon: { x: 0, z: 3 },
+  brain: { x: -9.8, z: 3 },
+  interview: { x: 9.8, z: 3 },
+  library: { x: -6.5, z: -7 },
+  chambre: { x: 6.5, z: -7 },
+  jardin: { x: 0, z: -14 },
 } as const;
 
 export const ROOM_POS: Record<string, { x: number; z: number }> = {
-  brain: { x: -13.5, z: -6 },
-  library: { x: -4.5, z: -14 },
-  interview: { x: 13.5, z: -6 },
-  salon: { x: 4.5, z: -14 },
-  chambre: { x: -4.5, z: -21.5 },
-  jardin: { x: 4.5, z: -21.5 },
+  // Plan de la maison : W=26 (X ∈ [-13, 13]), D=20 (Z ∈ [-11, 9])
+  // Cloisons : Z=-3 (traversante, ouverture centre), X=±6.5 (avant), X=0 (arrière)
+  // Salon = centre-avant (X ∈ [-6.5, 6.5], Z ∈ [-3, 9])
+  salon: { x: 0, z: 3 },
+  // Avant-gauche : Salle du Cerveau (X ∈ [-13, -6.5], Z ∈ [-3, 9])
+  brain: { x: -9.8, z: 3 },
+  // Avant-droite : Salle d'Interview (X ∈ [6.5, 13], Z ∈ [-3, 9])
+  interview: { x: 9.8, z: 3 },
+  // Arrière-gauche : Bibliothèque (X ∈ [-13, 0], Z ∈ [-11, -3])
+  library: { x: -6.5, z: -7 },
+  // Arrière-droite : Chambre (X ∈ [0, 13], Z ∈ [-11, -3])
+  chambre: { x: 6.5, z: -7 },
+  // Le Jardin : baie vitrée à l'arrière → serre extérieure derrière la maison
+  jardin: { x: 0, z: -14 },
 };
 
 export const ROOM_NAMES: Record<string, string> = {

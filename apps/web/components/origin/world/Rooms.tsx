@@ -1,7 +1,7 @@
 "use client";
 
 import * as THREE from "three";
-import { COLORS } from "./palette";
+import { COLORS, ROOM_POS } from "./palette";
 
 export interface PickRoomFn {
   room: string | null;
@@ -124,7 +124,7 @@ export function buildRooms(): RoomsLayout {
 
   // ============ SALLE DU CERVEAU ============
   const brainRoot = new THREE.Group();
-  const brainPos = { x: -13.5, z: -6 };
+  const brainPos = ROOM_POS.brain!;
   let brainMesh: THREE.Mesh;
   let neurons: THREE.Points;
   const pulses: THREE.Mesh[] = [];
@@ -212,7 +212,7 @@ export function buildRooms(): RoomsLayout {
     ring2.scale.setScalar(1.25);
     brainRoot.add(ring2);
 
-    addRoomLabel(brainRoot, "Salle du Cerveau", "#00e5ff", brainPos.x, 4.4, brainPos.z + 3.1, 0);
+    addRoomLabel(brainRoot, "Salle du Cerveau", "#00e5ff", brainPos.x, 3.1, brainPos.z + 2.6, 0);
   }
   roomMeshes.brain = new THREE.Mesh(new THREE.SphereGeometry(2.2, 10, 10));
   roomMeshes.brain.position.set(brainPos.x, 2.3, brainPos.z);
@@ -223,7 +223,7 @@ export function buildRooms(): RoomsLayout {
   root.add(brainRoot);
 
   // ============ BIBLIOTHÈQUE ============
-  const libPos = { x: -4.5, z: -14 };
+  const libPos = ROOM_POS.library!;
   const libRoots: THREE.Group[] = [];
   const bookMats: THREE.MeshStandardMaterial[] = [];
   {
@@ -241,15 +241,16 @@ export function buildRooms(): RoomsLayout {
     ];
     for (const cfg of configs) {
       const shelfGroup = new THREE.Group();
+      shelfGroup.position.set(cfg.x, 0, cfg.z);
+      shelfGroup.rotation.y = cfg.ry;
       const frame = new THREE.Mesh(new THREE.BoxGeometry(5.6, 4.2, 0.55), shelfMat);
-      frame.position.set(cfg.x, 2.1, cfg.z);
-      frame.rotation.y = cfg.ry;
+      frame.position.set(0, 2.1, 0);
       shelfGroup.add(frame);
       libRoots.push(shelfGroup);
       root.add(shelfGroup);
     }
 
-    addRoomLabel(root, "Bibliothèque", "#00ff9d", libPos.x, 4.4, libPos.z + 3.1, 0);
+    addRoomLabel(root, "Bibliothèque", "#00ff9d", libPos.x, 3.1, libPos.z + 2.6, 0);
   }
   const newGlowMat = new THREE.MeshBasicMaterial({
     color: 0x00ff9d,
@@ -280,7 +281,7 @@ export function buildRooms(): RoomsLayout {
   root.add(carpet);
 
   // ============ SALLE D'INTERVIEW ============
-  const intPos = { x: 13.5, z: -6 };
+  const intPos = ROOM_POS.interview!;
   const seatMats: THREE.MeshBasicMaterial[] = [];
   let seatMesh: THREE.Mesh | null = null;
   const seatGroup = new THREE.Group();
@@ -320,14 +321,14 @@ export function buildRooms(): RoomsLayout {
     ring.position.set(intPos.x, 0.5, intPos.z);
     seatGroup.add(ring);
 
-    addRoomLabel(root, "Salle d'Interview", "#ff6b9d", intPos.x, 4.4, intPos.z + 3.1, 0);
+    addRoomLabel(root, "Salle d'Interview", "#ff6b9d", intPos.x, 3.1, intPos.z + 2.6, 0);
   }
   root.add(seatGroup);
   roomMeshes.interview = seatGroup.children[0] as THREE.Mesh;
   floorGlow.interview = glowDisc(root, 0xff6b9d, intPos.x, intPos.z, 3.4);
 
   // ============ SALON ============
-  const salonPos = { x: 4.5, z: -14 };
+  const salonPos = ROOM_POS.salon!;
   let panel: THREE.Mesh;
   let panelMat: THREE.MeshBasicMaterial;
   {
@@ -385,12 +386,12 @@ export function buildRooms(): RoomsLayout {
     pickables.push(sofaMesh);
     roomMeshes.salon = sofaMesh;
 
-    addRoomLabel(root, "Salon", "#00e5ff", salonPos.x, 4.4, salonPos.z + 3.1, 0);
+    addRoomLabel(root, "Salon", "#00e5ff", salonPos.x, 3.1, salonPos.z + 2.6, 0);
   }
   floorGlow.salon = glowDisc(root, 0x00e5ff, salonPos.x, salonPos.z, 3.4);
 
   // ============ CHAMBRE ============
-  const bedPos = { x: -4.5, z: -21.5 };
+  const bedPos = ROOM_POS.chambre!;
   let mirror: THREE.Mesh;
   let mirrorMat: THREE.MeshBasicMaterial;
   const traitOrbs: { mesh: THREE.Mesh; mat: THREE.MeshBasicMaterial; color: number; phase: number }[] = [];
@@ -425,7 +426,7 @@ export function buildRooms(): RoomsLayout {
       side: THREE.DoubleSide,
     });
     mirror = new THREE.Mesh(new THREE.CircleGeometry(1.05, 24), mirrorMat);
-    mirror.position.set(bedPos.x + 1.2, 1.9, bedPos.z - 2.8);
+    mirror.position.set(bedPos.x + 1.2, 1.9, bedPos.z - 2.3);
     root.add(mirror);
 
     const mirrorFrame = new THREE.Mesh(new THREE.TorusGeometry(1.1, 0.08, 10, 32), frameMat);
@@ -447,7 +448,7 @@ export function buildRooms(): RoomsLayout {
       orb.position.set(
         bedPos.x + 1.2 + Math.cos(angle) * 1.5,
         1.9 + Math.sin(angle * 2) * 0.35,
-        bedPos.z - 2.8 + Math.sin(angle) * 1.5
+        bedPos.z - 2.3 + Math.sin(angle) * 1.5
       );
       root.add(orb);
       traitOrbs.push({ mesh: orb, mat: orbMat, color, phase: i * 0.9 });
@@ -458,12 +459,12 @@ export function buildRooms(): RoomsLayout {
     pickables.push(bedMesh);
     roomMeshes.chambre = bedMesh;
 
-    addRoomLabel(root, "Chambre", "#ff6b9d", bedPos.x, 4.4, bedPos.z + 3.1, 0);
+    addRoomLabel(root, "Chambre", "#ff6b9d", bedPos.x, 3.1, bedPos.z + 2.6, 0);
   }
   floorGlow.chambre = glowDisc(root, 0xff6b9d, bedPos.x, bedPos.z, 3.4);
 
   // ============ JARDIN ============
-  const gPos = { x: 4.5, z: -21.5 };
+  const gPos = ROOM_POS.jardin!;
   const plants: {
     group: THREE.Group;
     baseScale: number;
@@ -525,7 +526,7 @@ export function buildRooms(): RoomsLayout {
     pickables.push(soilMesh);
     roomMeshes.jardin = soilMesh;
 
-    addRoomLabel(root, "Jardin", "#00ff9d", gPos.x, 4.4, gPos.z + 3.1, 0);
+    addRoomLabel(root, "Jardin", "#00ff9d", gPos.x, 3.0, gPos.z + 2.2, 0);
   }
   floorGlow.jardin = glowDisc(root, 0x00ff9d, gPos.x, gPos.z, 3.4);
 

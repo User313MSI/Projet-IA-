@@ -21,15 +21,38 @@ export interface OriginAvatar {
   target: THREE.Vector3;
   currentRoom: { current: string };
   speakUntil: { current: number };
+  viaDoor: THREE.Vector3 | null;
 }
 
 const WAYPOINTS = [
-  { room: "salon", pos: new THREE.Vector3(4.5, 1.75, -12.2) },
-  { room: "library", pos: new THREE.Vector3(-4.5, 1.75, -12.2) },
-  { room: "brain", pos: new THREE.Vector3(-13.5, 1.75, -6) },
-  { room: "jardin", pos: new THREE.Vector3(4.5, 1.9, -21.5) },
-  { room: "interview", pos: new THREE.Vector3(13.5, 2.2, -7.5) },
-  { room: "chambre", pos: new THREE.Vector3(-4.5, 1.75, -19.5) },
+  { room: "salon", pos: new THREE.Vector3(0, 1.75, 2) },
+  { room: "salon", pos: new THREE.Vector3(-3, 1.75, 5) },
+  { room: "brain", pos: new THREE.Vector3(-9.8, 1.75, 4.5) },
+  { room: "interview", pos: new THREE.Vector3(9.8, 2.0, 4.5) },
+  { room: "library", pos: new THREE.Vector3(-6.5, 1.75, -5.5) },
+  { room: "chambre", pos: new THREE.Vector3(6.5, 1.75, -5.5) },
+  { room: "jardin", pos: new THREE.Vector3(0, 1.9, -13) },
+];
+
+// Segments de cloisons à éviter (même plan que la navigation caméra)
+const AVATAR_WALLS: { x1: number; z1: number; x2: number; z2: number }[] = [
+  { x1: -13.4, z1: -3.3, x2: -5.6, z2: -2.7 },
+  { x1: -4, z1: -3.3, x2: 4, z2: -2.7 },
+  { x1: 5.6, z1: -3.3, x2: 13.4, z2: -2.7 },
+  { x1: 6.2, z1: -3, x2: 6.8, z2: 4 },
+  { x1: 6.2, z1: 5.6, x2: 6.8, z2: 9 },
+  { x1: -6.8, z1: -3, x2: -6.2, z2: 4 },
+  { x1: -6.8, z1: 5.6, x2: -6.2, z2: 9 },
+  { x1: -0.25, z1: -11, x2: 0.25, z2: -3 },
+];
+// Nœuds-portes : salon ↔ pièces arrière (x=±4.8), salon ↔ pièces avant,
+// maison ↔ serre (porte vitrée)
+const DOOR_NODES = [
+  new THREE.Vector3(-4.8, 1.75, -3),
+  new THREE.Vector3(4.8, 1.75, -3),
+  new THREE.Vector3(-6.5, 1.75, 4.8),
+  new THREE.Vector3(6.5, 1.75, 4.8),
+  new THREE.Vector3(0, 1.75, -10.4),
 ];
 
 export function createOriginAvatar(scene: THREE.Scene): OriginAvatar {
@@ -143,6 +166,7 @@ export function createOriginAvatar(scene: THREE.Scene): OriginAvatar {
     target: start.clone(),
     currentRoom: { current: "salon" },
     speakUntil: { current: 0 },
+    viaDoor: null,
   };
 }
 
@@ -190,14 +214,43 @@ export function createAvatarAnimation(
       avatar.rings[1]!.rotation.y = t * -0.7;
       avatar.rings[2]!.rotation.x = t * 0.5;
 
-      // Errance de pièce en pièce
+      // Errance de pièce en pièce, en contournant les cloisons par les portes
       const pos = avatar.root.position;
       const toTarget = avatar.target.clone().sub(pos);
       const dist = toTarget.length();
       if (dist > 0.08) {
-        const dir = toTarget.normalize();
+        // Si la ligne directe coupe un mur, passer par le nœud-porte le plus proche
+        let dirTarget = toTarget.clone().normalize();
+        const posFlat = new THREE.Vector3(pos.x, 0, pos.z);
+        const tgtFlat = new THREE.Vector3(avatar.target.x, 0, avatar.target.z);
+        if (!avatar.viaDoor) {
+          for (const wSeg of AVATAR_WALLS) {
+            if (segmentHitsRect(posFlat, tgtFlat, wSeg)) {
+              const mid = posFlat.clone().lerp(tgtFlat, 0.5);
+              let bestNode: THREE.Vector3 | null = null;
+              let bestD = Infinity;
+              for (const node of DOOR_NODES) {
+                const d = mid.distanceToSquared(new THREE.Vector3(node.x, 0, node.z));
+                if (d < bestD) {
+                  bestD = d;
+                  bestNode = node;
+                }
+              }
+              if (bestNode) avatar.viaDoor = bestNode.clone();
+              break;
+            }
+          }
+        }
+        if (avatar.viaDoor) {
+          const toDoor = avatar.viaDoor.clone().sub(pos);
+          if (toDoor.length() < 0.35) {
+            avatar.viaDoor = null;
+          } else {
+            dirTarget = toDoor.normalize();
+          }
+        }
         const step = Math.min(speed * dt, dist);
-        pos.addScaledVector(dir, step);
+        pos.addScaledVector(dirTarget, step);
         avatar.currentRoom.current = nearestRoom(pos, world.roomCenters);
       } else {
         wanderTimer -= dt;
@@ -207,6 +260,7 @@ export function createAvatarAnimation(
           const wp = WAYPOINTS[wanderIndex];
           if (wp) {
             avatar.target.copy(wp.pos);
+            avatar.viaDoor = null;
           }
         }
       }
@@ -237,4 +291,33 @@ function nearestRoom(pos: THREE.Vector3, centers: Record<string, THREE.Vector3>)
     }
   }
   return best;
+}
+
+function segmentHitsRect(
+  a: THREE.Vector3,
+  b: THREE.Vector3,
+  rect: { x1: number; z1: number; x2: number; z2: number }
+): boolean {
+  const minX = Math.min(rect.x1, rect.x2);
+  const maxX = Math.max(rect.x1, rect.x2);
+  const minZ = Math.min(rect.z1, rect.z2);
+  const maxZ = Math.max(rect.z1, rect.z2);
+  const inside = (p: THREE.Vector3) => p.x > minX && p.x < maxX && p.z > minZ && p.z < maxZ;
+  if (inside(a) || inside(b)) return true;
+  const segIntersect = (
+    p1x: number, p1z: number, p2x: number, p2z: number,
+    q1x: number, q1z: number, q2x: number, q2z: number
+  ): boolean => {
+    const d1 = (p2x - p1x) * (q1z - p1z) - (p2z - p1z) * (q1x - p1x);
+    const d2 = (p2x - p1x) * (q2z - p1z) - (p2z - p1z) * (q2x - p1x);
+    const d3 = (q2x - q1x) * (p1z - q1z) - (q2z - q1z) * (p1x - q1x);
+    const d4 = (q2x - q1x) * (p2z - q1z) - (q2z - q1z) * (p2x - q1x);
+    return d1 * d2 < 0 && d3 * d4 < 0;
+  };
+  return (
+    segIntersect(a.x, a.z, b.x, b.z, minX, minZ, maxX, minZ) ||
+    segIntersect(a.x, a.z, b.x, b.z, minX, maxZ, maxX, maxZ) ||
+    segIntersect(a.x, a.z, b.x, b.z, minX, minZ, minX, maxZ) ||
+    segIntersect(a.x, a.z, b.x, b.z, maxX, minZ, maxX, maxZ)
+  );
 }

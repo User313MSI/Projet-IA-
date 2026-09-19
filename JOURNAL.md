@@ -603,3 +603,42 @@ Uniquement les fetchs existants (`/api/origin/state` via apiFetch + token). Aucu
 
 ### Perf
 Bloom = 3 passes GPU supplémentaires mais sur scène low-poly ça reste léger ; si le user constate une chute de FPS sur son laptop CPU, le bloom est le premier paramètre à réduire (strength 0.35) ou à couvrir d'un toggle.
+
+---
+
+## Aurora — 2026-09-18 — La vraie maison : refonte lisible en architecture réelle
+
+**Rôle :** Monde Virtuel d'Origin — la Maison
+
+**Contexte :** retour utilisateur — la maison abstraite (cylindre/dôme) était illisible. Refonte complète en maison réelle reconnaissable, en vraie 3D claire.
+
+### Travail effectué
+
+#### 1. Architecture réelle (`Maison.tsx`, réécrit)
+- Maison rectangulaire 26×20, murs pleins (0x241b45), faîte le long de Z, pignons extrudés, cheminée
+- Façade avec porte centrale (1.6 m, pivot charnière gauche) + linteau, porche avec lampe
+- Toit à deux pentes avec débord + faîte lumineux, plafond intérieur avec poutres
+- Fenêtres réelles (encadrement + vitrine pulsante) : 2 en façade, 4 latérales, baie vitrée arrière
+- **Plan intérieur clair** : porte → SALON (centre-avant) ; cloison Z=-3 avec 2 portes (x=±4.8) vers BIBLIOTHÈQUE (gauche) et CHAMBRE (droite) ; cloisons X=±6.5 avec portes près de la façade vers SALLE DU CERVEAU et SALLE D'INTERVIEW ; cloison X=0 entre bibliothèque et chambre
+- Plinthes lumineuses le long de toutes les cloisons (repères dans la pénombre)
+- **Serre/jardin** derrière la maison : structure vitrée réelle (soubassement, panneaux, montants, toit à deux pentes vitré, pignons, arche d'entrée lumineuse), accessible par la baie vitrée arrière
+
+#### 2. Navigation & collisions (`OriginWorld.tsx`)
+- Segments de collision mis à jour au nouveau plan (portes réelles franchissables, murs repoussent)
+- Murs extérieurs solides dehors (y compris arrière/latéraux + serre)
+- Zone serre accessible depuis l'intérieur via l'ouverture x∈[-2,2]
+- Vues caméra recadrées (jardin vu depuis la serre, pas à travers la cloison X=0)
+- Lumières repositionnées sur les vraies pièces (cerveau, chambre, serre, centre maison)
+
+#### 3. Avatar (`OriginAvatar.tsx`)
+- **Contournement de cloisons** : si la ligne directe coupe un mur, l'orbe passe par le nœud-porte le plus proche (portes x=±4.8, X=±6.5, baie arrière) — il emprunte les vraies portes comme un habitant
+- Waypoints alignés sur le nouveau plan
+
+#### 4. Mobilier (`Rooms.tsx`)
+- **Bug corrigé** : les groupes d'étagères de la bibliothèque n'étaient pas positionnés (les livres apparaissaient au centre de la maison au lieu des étagères)
+- Miroir de la chambre éloigné du mur arrière ; label Jardin ajusté
+
+### Vérifications
+- `pnpm typecheck` : ✅
+- `pnpm build` : ✅ (`/origin/maison` : 3.04 kB)
+- `pnpm test` : ✅ 97 tests verts
