@@ -34,8 +34,8 @@ const VIEW_EXTERIOR: { pos: [number, number, number]; look: [number, number, num
   look: [0, 2.2, 0],
 };
 const VIEW_INTERIOR: { pos: [number, number, number]; look: [number, number, number] } = {
-  pos: [0, 2.2, 4],
-  look: [0, 1.8, -4],
+  pos: [1.9, 2.2, 3.2],
+  look: [-0.8, 1.6, -2.0],
 };
 
 interface RoomView {
@@ -44,9 +44,9 @@ interface RoomView {
 }
 
 const ROOM_VIEWS: Record<string, RoomView> = {
-  salon: { camPos: [0, 2.0, 4.6], lookAt: [0, 1.4, 0.5] },
-  brain: { camPos: [-4.0, 2.0, 3.4], lookAt: [-6.8, 1.4, 2.6] },
-  interview: { camPos: [4.0, 2.0, 3.4], lookAt: [6.8, 1.2, 2.6] },
+  salon: { camPos: [0, 2.05, 5.4], lookAt: [0, 1.4, 1.0] },
+  brain: { camPos: [-6.3, 2.0, 4.6], lookAt: [-6.8, 1.35, 2.6] },
+  interview: { camPos: [6.0, 2.0, 4.8], lookAt: [6.8, 1.2, 2.6] },
   library: { camPos: [-2.2, 2.0, -2.6], lookAt: [-4.5, 1.4, -4.0] },
   chambre: { camPos: [2.2, 2.0, -2.6], lookAt: [4.5, 1.2, -4.0] },
   jardin: { camPos: [0, 2.0, -6.9], lookAt: [0, 0.9, -9.2] },
@@ -65,6 +65,7 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
   useEffect(() => { dataRef.current = data; }, [data]);
   const insideRef = useRef(false);
   const activeRoomRef = useRef<string | null>(null);
+  const roomsRef = useRef<RoomsLayout | null>(null);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -219,13 +220,17 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
       const layout = buildMaison();
       scene.add(layout.root);
       const houseAnim = createHouseAnimation(layout, doorOpenRef);
-      const rooms = buildRooms();
-      scene.add(rooms.root);
-      applyLibraryData(rooms, dataRef.current.documents);
-      applyInterviewData(rooms, dataRef.current.questions);
-      applyGardenData(rooms, dataRef.current.growth);
-      applyChambreData(rooms, dataRef.current.personality);
-      applyBrainData(rooms, dataRef.current.questions);
+      let cancelled = false;
+      buildRooms().then((rooms) => {
+        if (cancelled || disposed) return;
+        scene.add(rooms.root);
+        applyLibraryData(rooms, dataRef.current.documents);
+        applyInterviewData(rooms, dataRef.current.questions);
+        applyGardenData(rooms, dataRef.current.growth);
+        applyChambreData(rooms, dataRef.current.personality);
+        applyBrainData(rooms, dataRef.current.questions);
+        roomsRef.current = rooms;
+      });
 
       // ---------- Avatar d'Origin ----------
       const avatar = createOriginAvatar(scene);
@@ -300,7 +305,8 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
         pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
         pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
         raycaster.setFromCamera(pointer, camera);
-        const hits = raycaster.intersectObjects([layout.door!, ...rooms.pickables], true);
+        const roomObjs = roomsRef.current ? [layout.door!, ...roomsRef.current.pickables] : [layout.door!];
+        const hits = raycaster.intersectObjects(roomObjs, true);
         if (hits.length > 0) {
           const first = hits[0]!.object;
           if (first === layout.door) {
@@ -512,34 +518,35 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
         avatarAnim.update(t, dt);
 
         // Cerveau : rotation + impulsions orbitales
-        if (rooms.brain) {
-          rooms.brain.brainMesh.rotation.y = t * 0.25;
-          rooms.brain.brainMesh.rotation.z = Math.sin(t * 0.4) * 0.1;
-          rooms.brain.neurons.rotation.y = -t * 0.1;
-          for (let i = 0; i < rooms.brain.pulses.length; i++) {
-            const pulse = rooms.brain.pulses[i]!;
+        const roomsNow = roomsRef.current;
+        if (roomsNow?.brain) {
+          roomsNow.brain.brainMesh.rotation.y = t * 0.25;
+          roomsNow.brain.brainMesh.rotation.z = Math.sin(t * 0.4) * 0.1;
+          roomsNow.brain.neurons.rotation.y = -t * 0.1;
+          for (let i = 0; i < roomsNow.brain.pulses.length; i++) {
+            const pulse = roomsNow.brain.pulses[i]!;
             const seed = (pulse.userData.seed as number) ?? i;
             const a = t * 0.8 + seed * 2.39;
             const radius = 0.62 + Math.sin(t * 1.7 + seed) * 0.1;
             pulse.position.set(
-              rooms.brain.brainMesh.position.x + Math.cos(a) * radius,
-              rooms.brain.brainMesh.position.y + Math.sin(a * 0.8) * 0.5,
-              rooms.brain.brainMesh.position.z + Math.sin(a) * radius
+              roomsNow.brain.brainMesh.position.x + Math.cos(a) * radius,
+              roomsNow.brain.brainMesh.position.y + Math.sin(a * 0.8) * 0.5,
+              roomsNow.brain.brainMesh.position.z + Math.sin(a) * radius
             );
             pulse.scale.setScalar(0.6 + 0.4 * Math.abs(Math.sin(t * 3 + seed)));
           }
         }
 
         // Salon : l'écran holographique respire
-        if (rooms.salon) {
-          rooms.salon.panelMat.opacity = 0.14 + 0.1 * Math.sin(t * 1.4);
-          rooms.salon.panel.rotation.z = Math.sin(t * 0.6) * 0.03;
+        if (roomsNow?.salon) {
+          roomsNow.salon.panelMat.opacity = 0.14 + 0.1 * Math.sin(t * 1.4);
+          roomsNow.salon.panel.rotation.z = Math.sin(t * 0.6) * 0.03;
         }
 
         // Chambre : miroir + orbes de traits
-        if (rooms.chambre) {
-          rooms.chambre.mirrorMat.opacity = 0.14 + 0.08 * Math.sin(t * 1.1);
-          for (const orb of rooms.chambre.orbs) {
+        if (roomsNow?.chambre) {
+          roomsNow.chambre.mirrorMat.opacity = 0.14 + 0.08 * Math.sin(t * 1.1);
+          for (const orb of roomsNow.chambre.orbs) {
             const p = 0.6 + 0.4 * Math.sin(t * 1.8 + orb.phase);
             orb.mat.opacity = 0.35 + p * 0.5;
             orb.mesh.scale.setScalar(0.8 + p * 0.5);
@@ -547,18 +554,20 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
         }
 
         // Jardin : les plantes ondulent doucement
-        if (rooms.jardin) {
-          rooms.jardin.plants.forEach((plant, i) => {
+        if (roomsNow?.jardin) {
+          roomsNow.jardin.plants.forEach((plant, i) => {
             plant.group.rotation.z = Math.sin(t * 0.9 + i) * 0.06;
           });
         }
 
         // Disques lumineux des pièces actives
-        for (const [room, mat] of Object.entries(rooms.floorGlow)) {
-          if (!mat) continue;
-          const active = activeRoomRef.current === room;
-          const target = active ? 0.16 + 0.06 * Math.sin(t * 2) : 0.05;
-          mat.opacity += (target - mat.opacity) * 0.06;
+        if (roomsNow) {
+          for (const [room, mat] of Object.entries(roomsNow.floorGlow)) {
+            if (!mat) continue;
+            const active = activeRoomRef.current === room;
+            const target = active ? 0.16 + 0.06 * Math.sin(t * 2) : 0.05;
+            mat.opacity += (target - mat.opacity) * 0.06;
+          }
         }
 
         // Particules : montée lente
@@ -675,8 +684,9 @@ export function applyLibraryData(rooms: RoomsLayout, documents: Document[]): voi
   }
   rooms.library!.bookMats.length = 0;
 
-  // 3 bibliothèques × 4 étagères × 8 places = 96 emplacements de livres
-  const shelfSlots = rooms.library!.roots.length * 8;
+  // Bibliothèques GLB : 8 niveaux × 6 places = 48 emplacements par bibliothèque
+  const perShelf = 6;
+  const shelfSlots = rooms.library!.roots.length * perShelf;
 
   documents.slice(0, shelfSlots).forEach((doc, idx) => {
     const typeInfo = DOC_TYPE_INFO[doc.type] ?? DOC_TYPE_INFO.note!;
@@ -689,18 +699,16 @@ export function applyLibraryData(rooms: RoomsLayout, documents: Document[]): voi
       metalness: 0.1,
     });
     rooms.library!.bookMats.push(mat);
-    const book = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.30, 0.17), mat);
-    const perShelf = 8;
+    const book = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.26, 0.16), mat);
     const shelfIndex = Math.floor(idx / perShelf);
     const col = idx % perShelf;
 
-    // Les étagères sont des groupes positionnés dans le kit (y = dessus de l'étagère)
-    const lx = -0.49 + col * 0.14;
-    const ly = 0.0;
-    const lz = 0.02;
+    // Niveaux posés sur les étagères GLB (BOOKSHELF_SLOTS), largeur ~0.92 m
+    const shelfWidth = 0.92;
+    const lx = -shelfWidth / 2 + 0.08 + col * 0.15;
 
     const group = rooms.library!.roots[Math.min(shelfIndex, rooms.library!.roots.length - 1)]!;
-    book.position.set(lx, ly, lz);
+    book.position.set(lx, 0.0, 0.0);
     book.userData.bookId = doc.id;
     book.userData.doc = doc;
     book.userData.pick = { room: "library", item: doc.id, data: doc } as never;

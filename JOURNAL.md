@@ -720,3 +720,39 @@ La signature « Origin » reste portée par l'orbe cyan-violet, les hologrammes 
 - `pnpm typecheck` : ✅
 - `pnpm build` : ✅ (`/origin/maison` : 3.04 kB)
 - `pnpm test` : ✅ 97 tests verts
+
+## Aurora — 2026-09-19 — Option A : vrais modèles 3D GLB (CC0 Quaternius) dans la maison
+
+**Rôle :** Monde Virtuel d'Origin — la Maison
+**Décision :** tester l'option A — remplacer le mobilier procédural par de vrais modèles 3D GLB.
+
+### Assets intégrés (CC0, pack "Ultimate Home Interior" de Quaternius, via trebeljahr/quaternius-showcase)
+- 23 GLB dans `apps/web/public/models/` (~430 Ko total, 4-40 Ko chacun) : canapé, fauteuils, chaises, lit king, bibliothèque, tables, chevet, commode, miroir, lampes (pivotante, petite, de bureau), lustre, plafonnier, plantes (4), tapis (rectangulaire, rond), étagère murale.
+- Mesures précises de chaque GLB au préalable (bbox, échelle source ~2×, orientation du dossier/côté tête).
+
+### Nouveau chargeur `components/origin/world/models.ts`
+- `loadFurnitureKit()` : charge les 23 GLB en parallèle, **normalise chaque modèle** (échelle réelle de marché : canapé 2,3 m, lit 2 m, bibliothèque 2 m de haut...), l'ancre au sol (min.y = 0), le centre en X/Z, puis sert des **clones profonds** (géométries + matériaux clonés) — le dispose React d'un montage précédent ne casse pas le cache.
+- `BOOKSHELF_SLOTS` : hauteurs des 8 étagères mesurées sur le maillage réel.
+- Ancres spéciales : `hang` (lustre/plafonnier accrochés au plafond), `center` (miroir).
+
+### Rooms.tsx réécrit autour des modèles réels
+- Chaque pièce utilise les GLB via le kit, avec **fallback procédural** si un modèle manque.
+- Salon : canapé GLB 2,3 m face à l'écran holographique, fauteuils réels, table basse ovale, tapis rectangulaire, lustre.
+- Bibliothèque : 3 bibliothèques GLB avec livres posés sur les étagères mesurées, table de lecture réelle + chaises, lampe.
+- Chambre : lit king GLB tête au mur, chevet + lampe, commode, miroir doré au-dessus, plante.
+- Salle du cerveau : bibliothèque + fauteuil réels dans le coin lecture.
+- Interview : 2 fauteuils réels face à face + table basse.
+- Positions validées par test : aucun meuble ne dépasse les murs de sa pièce.
+
+### OriginWorld.tsx
+- `buildRooms()` est devenu async (chargement GLB) : les pièces s'ajoutent à la scène dès que le kit est prêt (`roomsRef`), le raycast et les animations attendent proprement.
+- `applyLibraryData` : livres 5,5×26×16 cm posés sur les étagères GLB (48 emplacements/bibliothèque).
+- Vues caméra recalées au nouveau mobilier (canapé plus profond) : entrée intérieure et vues salon/brain/interview décalées.
+- Maisons lointaines testées puis retirées : flotteraient hors du terrain actuel, réservées à la Phase 4 (ville).
+
+### Vérifications
+- Test de normalisation Node : 17 modèles, tous ancrés au sol, tailles réelles (canapé 2,30×0,88×0,84...) ✅
+- Test de placement : 8 meubles-clés, aucun dépassement des murs ✅
+- `pnpm typecheck` : ✅
+- `pnpm build` : ✅
+- `pnpm test` : ✅ 97 tests verts
