@@ -88,26 +88,27 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
       renderer.domElement.style.cursor = "pointer";
       renderer.domElement.style.display = "block";
 
-      // ---------- Lumières ----------
-      scene.add(new THREE.AmbientLight(0x503a8f, 0.55));
-      const hemi = new THREE.HemisphereLight(0x2a2470, 0x0a0518, 0.5);
+      // ---------- Lumières (nuit réaliste : lune bleutée douce, intérieur chaud) ----------
+      scene.add(new THREE.AmbientLight(0x33415c, 0.7));
+      const hemi = new THREE.HemisphereLight(0x2c3a55, 0x11161f, 0.6);
       scene.add(hemi);
-      const moon = new THREE.DirectionalLight(0x9fd8ff, 0.85);
+      const moon = new THREE.DirectionalLight(0xbfd4e8, 0.9);
       moon.position.set(14, 26, 18);
       scene.add(moon);
-      const moon2 = new THREE.DirectionalLight(0x7c4dff, 0.35);
+      const moon2 = new THREE.DirectionalLight(0x8fa3bd, 0.3);
       moon2.position.set(-18, 14, -24);
       scene.add(moon2);
-      const interior = new THREE.PointLight(0x7c4dff, 1.0, 42, 1.6);
+      // Lueur chaude émise par les fenêtres (comme une maison habitée)
+      const interior = new THREE.PointLight(0xffc98a, 1.2, 42, 1.6);
       interior.position.set(0, 5.2, -1);
       scene.add(interior);
-      const warmCorner = new THREE.PointLight(0xff6b9d, 0.6, 16, 2);
+      const warmCorner = new THREE.PointLight(0xffb37a, 0.7, 16, 2);
       warmCorner.position.set(6.5, 3.2, -7);
       scene.add(warmCorner);
-      const gardenLight = new THREE.PointLight(0x00ff9d, 0.7, 14, 2);
+      const gardenLight = new THREE.PointLight(0xa8d8b0, 0.7, 14, 2);
       gardenLight.position.set(0, 3.0, -14);
       scene.add(gardenLight);
-      const brainLight = new THREE.PointLight(0x7c4dff, 0.8, 12, 2);
+      const brainLight = new THREE.PointLight(0xd8e8ff, 0.8, 12, 2);
       brainLight.position.set(-9.8, 3.4, 3);
       scene.add(brainLight);
 
@@ -155,8 +156,8 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
       const nctx = nebCanvas.getContext("2d");
       if (nctx) {
         const grad = nctx.createRadialGradient(128, 128, 10, 128, 128, 128);
-        grad.addColorStop(0, "rgba(124,77,255,0.55)");
-        grad.addColorStop(0.5, "rgba(0,229,255,0.16)");
+        grad.addColorStop(0, "rgba(70,90,140,0.4)");
+        grad.addColorStop(0.5, "rgba(60,80,130,0.12)");
         grad.addColorStop(1, "rgba(0,0,0,0)");
         nctx.fillStyle = grad;
         nctx.fillRect(0, 0, 256, 256);
@@ -389,14 +390,14 @@ export default function OriginWorld({ data, onSelection }: { data: WorldData; on
         }
       }
 
-      // ---------- Post-processing : bloom néon ----------
+      // ---------- Post-processing : bloom discret (orbe + hologrammes) ----------
       const composer = new EffectComposer(renderer);
       composer.addPass(new RenderPass(scene, camera));
       const bloom = new UnrealBloomPass(
         new THREE.Vector2(width, height),
-        0.55, // strength
-        0.6,  // radius
-        0.62  // threshold
+        0.32, // strength
+        0.5,  // radius
+        0.72  // threshold
       );
       composer.addPass(bloom);
       composer.setSize(width, height);

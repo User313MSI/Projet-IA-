@@ -1,7 +1,7 @@
 "use client";
 
 import * as THREE from "three";
-import { COLORS, ROOM_POS } from "./palette";
+import { ROOM_POS } from "./palette";
 
 export interface PickRoomFn {
   room: string | null;
@@ -114,12 +114,21 @@ export function buildRooms(): RoomsLayout {
   const roomMeshes: Record<string, THREE.Mesh> = {};
   const floorGlow: Record<string, THREE.MeshBasicMaterial | null> = {};
 
+  // Mobilier : bois chaleureux, tissu, laiton — comme une vraie maison
   const furnitureMat = new THREE.MeshStandardMaterial({
-    color: 0x1c1436,
-    roughness: 0.45,
-    metalness: 0.25,
-    emissive: 0x0a0520,
-    emissiveIntensity: 0.5,
+    color: 0x7a5236,
+    roughness: 0.65,
+    metalness: 0.0,
+  });
+  const fabricMat = new THREE.MeshStandardMaterial({
+    color: 0x9c8f80,
+    roughness: 0.95,
+    metalness: 0.0,
+  });
+  const brassMat = new THREE.MeshStandardMaterial({
+    color: 0xc9a227,
+    roughness: 0.35,
+    metalness: 0.85,
   });
 
   // ============ SALLE DU CERVEAU ============
@@ -135,24 +144,24 @@ export function buildRooms(): RoomsLayout {
     brainRoot.add(pedestal);
 
     const brainMat = new THREE.MeshStandardMaterial({
-      color: 0x7c4dff,
-      emissive: 0x5b2fd6,
-      emissiveIntensity: 0.6,
-      roughness: 0.5,
-      metalness: 0.1,
+      color: 0xd8c8e8,
+      emissive: 0x9a6be8,
+      emissiveIntensity: 0.45,
+      roughness: 0.55,
+      metalness: 0.05,
     });
     brainMesh = new THREE.Mesh(new THREE.IcosahedronGeometry(1.35, 3), brainMat);
     brainMesh.position.set(brainPos.x, 2.35, brainPos.z);
     brainRoot.add(brainMesh);
 
     const memMat = new THREE.MeshPhysicalMaterial({
-      color: 0x0a1428,
-      emissive: 0x00e5ff,
-      emissiveIntensity: 0.35,
-      roughness: 0.2,
-      metalness: 0.1,
+      color: 0xd0e4f2,
+      emissive: 0x9ac8e8,
+      emissiveIntensity: 0.2,
+      roughness: 0.15,
+      metalness: 0.0,
       transparent: true,
-      opacity: 0.22,
+      opacity: 0.18,
       clearcoat: 0.8,
     });
     const membrane = new THREE.Mesh(new THREE.SphereGeometry(1.65, 24, 20), memMat);
@@ -228,11 +237,9 @@ export function buildRooms(): RoomsLayout {
   const bookMats: THREE.MeshStandardMaterial[] = [];
   {
     const shelfMat = new THREE.MeshStandardMaterial({
-      color: 0x241a4a,
-      roughness: 0.5,
-      metalness: 0.2,
-      emissive: 0x0e0a26,
-      emissiveIntensity: 0.6,
+      color: 0x6b4226,
+      roughness: 0.7,
+      metalness: 0.0,
     });
     const configs = [
       { x: libPos.x - 3.2, z: libPos.z, ry: Math.PI / 2 },
@@ -290,11 +297,9 @@ export function buildRooms(): RoomsLayout {
     base.position.set(intPos.x, 0.18, intPos.z);
     seatGroup.add(base);
     const cushionMat = new THREE.MeshStandardMaterial({
-      color: 0x2a1c5e,
-      roughness: 0.55,
-      metalness: 0.15,
-      emissive: 0x140a3a,
-      emissiveIntensity: 0.7,
+      color: 0xa8564a,
+      roughness: 0.9,
+      metalness: 0.0,
     });
     const cushion = new THREE.Mesh(new THREE.SphereGeometry(1.05, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), cushionMat);
     cushion.position.set(intPos.x, 0.35, intPos.z);
@@ -333,11 +338,9 @@ export function buildRooms(): RoomsLayout {
   let panelMat: THREE.MeshBasicMaterial;
   {
     const sofaMat = new THREE.MeshStandardMaterial({
-      color: 0x3a2470,
-      roughness: 0.6,
-      metalness: 0.1,
-      emissive: 0x1a0e42,
-      emissiveIntensity: 0.6,
+      color: 0x5c6b52,
+      roughness: 0.95,
+      metalness: 0.0,
     });
     const seat = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.55, 1.1), sofaMat);
     seat.position.set(salonPos.x, 0.35, salonPos.z + 1.6);
@@ -352,14 +355,10 @@ export function buildRooms(): RoomsLayout {
     armR.position.x = salonPos.x + 1.45;
     root.add(armR);
 
-    const tableMat = new THREE.MeshPhysicalMaterial({
-      color: 0x0d2233,
-      roughness: 0.2,
-      metalness: 0.4,
-      emissive: 0x031018,
-      emissiveIntensity: 0.5,
-      transparent: true,
-      opacity: 0.85,
+    const tableMat = new THREE.MeshStandardMaterial({
+      color: 0x8a6244,
+      roughness: 0.5,
+      metalness: 0.0,
     });
     const table = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.08, 18), tableMat);
     table.position.set(salonPos.x, 0.55, salonPos.z - 0.4);
@@ -397,25 +396,29 @@ export function buildRooms(): RoomsLayout {
   const traitOrbs: { mesh: THREE.Mesh; mat: THREE.MeshBasicMaterial; color: number; phase: number }[] = [];
   {
     const bedMat = new THREE.MeshStandardMaterial({
-      color: 0x2a1a52,
-      roughness: 0.6,
-      metalness: 0.1,
-      emissive: 0x120a30,
-      emissiveIntensity: 0.6,
+      color: 0xd8d2c8,
+      roughness: 0.9,
+      metalness: 0.0,
+    });
+    const bedWoodMat = new THREE.MeshStandardMaterial({
+      color: 0x6b4226,
+      roughness: 0.65,
+      metalness: 0.0,
     });
     const mattress = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.5, 1.4), bedMat);
     mattress.position.set(bedPos.x - 1.8, 0.35, bedPos.z);
     root.add(mattress);
-    const headboard = new THREE.Mesh(new THREE.BoxGeometry(0.25, 1.3, 1.4), bedMat);
+    const headboard = new THREE.Mesh(new THREE.BoxGeometry(0.25, 1.3, 1.4), bedWoodMat);
     headboard.position.set(bedPos.x - 3.15, 0.8, bedPos.z);
     root.add(headboard);
+    const bedFrame = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.25, 1.5), bedWoodMat);
+    bedFrame.position.set(bedPos.x - 1.8, 0.12, bedPos.z);
+    root.add(bedFrame);
 
     const frameMat = new THREE.MeshStandardMaterial({
-      color: 0x14204a,
-      roughness: 0.35,
-      metalness: 0.45,
-      emissive: 0x081020,
-      emissiveIntensity: 0.7,
+      color: 0xd4b96a,
+      roughness: 0.4,
+      metalness: 0.6,
     });
     mirrorMat = new THREE.MeshBasicMaterial({
       color: 0x00e5ff,
@@ -474,11 +477,9 @@ export function buildRooms(): RoomsLayout {
   }[] = [];
   {
     const soilMat = new THREE.MeshStandardMaterial({
-      color: COLORS.soil,
-      roughness: 0.8,
-      metalness: 0.05,
-      emissive: 0x060410,
-      emissiveIntensity: 0.5,
+      color: 0x4a3a2a,
+      roughness: 1.0,
+      metalness: 0.0,
     });
     const soil = new THREE.Mesh(new THREE.CylinderGeometry(2.9, 3.1, 0.35, 16), soilMat);
     soil.position.set(gPos.x, 0.18, gPos.z);
@@ -495,11 +496,11 @@ export function buildRooms(): RoomsLayout {
     for (const sp of spots) {
       const pg = new THREE.Group();
       const stemMat = new THREE.MeshStandardMaterial({
-        color: 0x00b894,
-        emissive: 0x005f3a,
-        emissiveIntensity: 0.8,
-        roughness: 0.55,
-        metalness: 0.1,
+        color: 0x3e8a4a,
+        emissive: 0x0e3a1a,
+        emissiveIntensity: 0.25,
+        roughness: 0.8,
+        metalness: 0.0,
       });
       const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 1.0, 6), stemMat);
       stem.position.y = 0.5;
@@ -512,7 +513,7 @@ export function buildRooms(): RoomsLayout {
         leaf.rotation.y = la;
         pg.add(leaf);
       }
-      const light = new THREE.PointLight(0x00ff9d, 0.5, 3.5, 2);
+      const light = new THREE.PointLight(0xa8e8b0, 0.35, 3.5, 2);
       light.position.y = 1.0;
       pg.add(light);
       pg.position.set(sp.x, 0.35, sp.z);

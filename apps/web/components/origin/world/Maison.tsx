@@ -1,7 +1,6 @@
 "use client";
 
 import * as THREE from "three";
-import { COLORS } from "./palette";
 
 export interface MaisonLayout {
   root: THREE.Group;
@@ -37,38 +36,38 @@ export function buildMaison(): MaisonLayout {
   const breathers: MaisonLayout["breathers"] = [];
   const windows: THREE.Mesh[] = [];
 
-  // ============ MATÉRIAUX DE LA MAISON ============
-  // Murs extérieurs : matériau sombre chaleureux avec relief discret
+  // ============ MATÉRIAUX DE LA MAISON (style maison réelle) ============
+  // Murs extérieurs : enduit chaud crème/beige, mat
   const wallMat = new THREE.MeshStandardMaterial({
-    color: 0x241b45,
-    roughness: 0.65,
-    metalness: 0.12,
-    emissive: 0x0a0620,
-    emissiveIntensity: 0.4,
+    color: 0xcfc4b0,
+    roughness: 0.92,
+    metalness: 0.0,
   });
-  // Cloisons intérieures : plus claires, mate
+  // Cloisons intérieures : peinture claire mate
   const partitionMat = new THREE.MeshStandardMaterial({
-    color: 0x33265c,
-    roughness: 0.75,
-    metalness: 0.05,
-    emissive: 0x0c0824,
-    emissiveIntensity: 0.35,
+    color: 0xe9e3d8,
+    roughness: 0.95,
+    metalness: 0.0,
   });
-  // Plinthes lumineuses cyan (donnent le style néon ET guident le regard)
+  // Plinthes : liseré LED chaud très discret (guide nocturne, pas néon)
   const skirtMat = new THREE.MeshBasicMaterial({
-    color: COLORS.cyan,
+    color: 0xffb86b,
     transparent: true,
-    opacity: 0.35,
+    opacity: 0.16,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   });
-  // Poutres / encadrements
+  // Menuiseries : blanc cassé (fenêtres, encadrements)
   const beamMat = new THREE.MeshStandardMaterial({
-    color: 0x3d2c6e,
-    roughness: 0.5,
-    metalness: 0.3,
-    emissive: 0x120b30,
-    emissiveIntensity: 0.6,
+    color: 0xf2eee6,
+    roughness: 0.6,
+    metalness: 0.05,
+  });
+  // Bois chaleureux (poutres, mobilier fixe)
+  const woodMat = new THREE.MeshStandardMaterial({
+    color: 0x8a6244,
+    roughness: 0.7,
+    metalness: 0.0,
   });
 
   const wall = (x1: number, z1: number, x2: number, z2: number, h = H, thickness = T, y = 0) => {
@@ -89,55 +88,65 @@ export function buildMaison(): MaisonLayout {
     return mesh;
   };
 
-  // ============ PLATEFORME (sol de la maison) ============
+  // ============ PLATEFORME (terrain : herbe + terrasse en pierre) ============
   const platMat = new THREE.MeshStandardMaterial({
-    color: 0x1b1440,
-    roughness: 0.6,
-    metalness: 0.18,
-    emissive: 0x0c0822,
-    emissiveIntensity: 0.5,
+    color: 0x4a6b3a,
+    roughness: 1.0,
+    metalness: 0.0,
   });
   const plat = new THREE.Mesh(new THREE.BoxGeometry(W + 7, 1.0, D + 14), platMat);
   plat.position.set(0, -0.5, -1);
   root.add(plat);
 
-  // Chemin d'entrée en dur (devant la porte, vers la caméra)
-  const pathMat = new THREE.MeshStandardMaterial({
-    color: 0x1f1745,
-    roughness: 0.55,
-    metalness: 0.2,
-    emissive: 0x0a0630,
-    emissiveIntensity: 0.6,
+  // Terrasse en pierre claire autour de la maison
+  const terraceMat = new THREE.MeshStandardMaterial({
+    color: 0xa8a094,
+    roughness: 0.95,
+    metalness: 0.0,
   });
-  const path = new THREE.Mesh(new THREE.BoxGeometry(3, 0.24, 8), pathMat);
-  path.position.set(0, 0.0, D / 2 + 4);
-  root.add(path);
+  const terrace = new THREE.Mesh(new THREE.BoxGeometry(W + 5, 0.08, D + 6), terraceMat);
+  terrace.position.set(0, 0.02, -1);
+  root.add(terrace);
 
-  // Bordure lumineuse du chemin (2 lignes cyan continues)
+  // Chemin d'entrée en dalles de pierre (devant la porte, vers la caméra)
+  const pathMat = new THREE.MeshStandardMaterial({
+    color: 0x9c948a,
+    roughness: 0.9,
+    metalness: 0.0,
+  });
+  const path = new THREE.Mesh(new THREE.BoxGeometry(3, 0.06, 8), pathMat);
+  path.position.set(0, 0.05, D / 2 + 4);
+  root.add(path);
+  // Dalles individuelles du chemin (rythme réel)
+  for (let i = 0; i < 6; i++) {
+    const slab = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.08, 0.9), pathMat);
+    slab.position.set(0, 0.06, D / 2 + 1.4 + i * 1.35);
+    root.add(slab);
+  }
+
+  // Bordure chaude très discrète du chemin (éclairage architectural bas)
   for (const sx of [-1.6, 1.6]) {
     const stripMat = new THREE.MeshBasicMaterial({
-      color: COLORS.cyan,
+      color: 0xffb86b,
       transparent: true,
-      opacity: 0.5,
+      opacity: 0.14,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
-    const strip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, 8), stripMat);
-    strip.position.set(sx, 0.13, D / 2 + 4);
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.02, 8), stripMat);
+    strip.position.set(sx, 0.1, D / 2 + 4);
     root.add(strip);
-    breathers.push({ mat: stripMat, base: 0.35, amp: 0.2, speed: 0.9, phase: sx });
+    breathers.push({ mat: stripMat, base: 0.1, amp: 0.06, speed: 0.9, phase: sx });
   }
 
-  // Bord LED de la plateforme
-  const edgeMat = new THREE.MeshBasicMaterial({
-    color: COLORS.cyan,
-    transparent: true,
-    opacity: 0.5,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
+  // Bord du terrain discret (pierre, pas de LED)
+  const edgeMat = new THREE.MeshStandardMaterial({
+    color: 0x8d867c,
+    roughness: 0.95,
+    metalness: 0.0,
   });
-  const edge = new THREE.Mesh(new THREE.BoxGeometry(W + 7.2, 0.06, D + 14.2), edgeMat);
-  edge.position.set(0, 0.03, -1);
+  const edge = new THREE.Mesh(new THREE.BoxGeometry(W + 7.2, 0.08, D + 14.2), edgeMat);
+  edge.position.set(0, 0.02, -1);
   root.add(edge);
   breathers.push({ mat: edgeMat, base: 0.3, amp: 0.2, speed: 0.8, phase: 0 });
 
@@ -189,19 +198,16 @@ export function buildMaison(): MaisonLayout {
     mesh.position.set(cx, cy, -1);
     houseRoot.add(mesh);
 
-    // Ligne lumineuse le long du bord du toit (avant)
-    const trimMat = new THREE.MeshBasicMaterial({
-      color: COLORS.violet,
-      transparent: true,
-      opacity: 0.4,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
+    // Gouttière le long du bord du toit (métal sombre, réaliste)
+    const trimMat = new THREE.MeshStandardMaterial({
+      color: 0x6b6560,
+      roughness: 0.4,
+      metalness: 0.7,
     });
-    const trim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, roofLen), trimMat);
-    trim.position.set(side * run * 0.96, H + 0.05, -1);
+    const trim = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.14, roofLen), trimMat);
+    trim.position.set(side * run * 0.96, H + 0.02, -1);
     trim.rotation.z = side * angle;
     houseRoot.add(trim);
-    breathers.push({ mat: trimMat, base: 0.3, amp: 0.2, speed: 0.7, phase: side });
   };
   makeSlope(1);
   makeSlope(-1);
@@ -219,64 +225,66 @@ export function buildMaison(): MaisonLayout {
     houseRoot.add(gable);
   }
 
-  // Poutre faîtière lumineuse
-  const ridgeMat = new THREE.MeshBasicMaterial({
-    color: COLORS.cyan,
-    transparent: true,
-    opacity: 0.45,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
+  // Faîtière en tuiles (arête du toit)
+  const ridgeMat = new THREE.MeshStandardMaterial({
+    color: 0x8a4029,
+    roughness: 0.85,
+    metalness: 0.0,
   });
-  const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, D + 2), ridgeMat);
-  ridge.position.set(0, H + ridgeH + 0.05, -1);
+  const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.18, D + 2), ridgeMat);
+  ridge.position.set(0, H + ridgeH + 0.04, -1);
   houseRoot.add(ridge);
-  breathers.push({ mat: ridgeMat, base: 0.35, amp: 0.25, speed: 0.6, phase: 2 });
 
-  // Cheminée
-  const chimneyMat = new THREE.MeshStandardMaterial({
-    color: 0x2a1f5e,
-    roughness: 0.6,
-    metalness: 0.15,
-    emissive: 0x100a30,
-    emissiveIntensity: 0.7,
+  // Cheminée en brique avec chapeau en pierre
+  const brickMat = new THREE.MeshStandardMaterial({
+    color: 0x8f4a38,
+    roughness: 0.9,
+    metalness: 0.0,
   });
-  const chimney = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.6, 1.1), chimneyMat);
+  const chimney = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.6, 1.1), brickMat);
   chimney.position.set(W / 2 - 4, 4.6, -1);
   houseRoot.add(chimney);
-  const chimneyGlowMat = new THREE.MeshBasicMaterial({
-    color: 0xff6b9d,
-    transparent: true,
-    opacity: 0.5,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
+  const chimneyCapMat = new THREE.MeshStandardMaterial({
+    color: 0xb8b0a4,
+    roughness: 0.9,
+    metalness: 0.0,
   });
-  const chimneyGlow = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.1, 0.7), chimneyGlowMat);
-  chimneyGlow.position.set(W / 2 - 4, 5.45, -1);
-  houseRoot.add(chimneyGlow);
-  breathers.push({ mat: chimneyGlowMat, base: 0.35, amp: 0.3, speed: 1.4, phase: 3 });
+  const chimneyCap = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.18, 1.3), chimneyCapMat);
+  chimneyCap.position.set(W / 2 - 4, 5.48, -1);
+  houseRoot.add(chimneyCap);
 
-  // ============ FENÊTRES ============
+  // ============ FENÊTRES (menuiserie bois blanc, vitrage clair) ============
+  // De nuit, les vitres laissent passer la lueur chaude de l'intérieur
   const windowGlassMat = new THREE.MeshPhysicalMaterial({
-    color: COLORS.darkGlass,
-    emissive: COLORS.cyan,
-    emissiveIntensity: 1.0,
-    roughness: 0.1,
-    metalness: 0.05,
+    color: 0xbfd2d8,
+    emissive: 0xffc98a,
+    emissiveIntensity: 0.35,
+    roughness: 0.12,
+    metalness: 0.0,
     transparent: true,
-    opacity: 0.7,
-    transmission: 0.9,
-    thickness: 0.3,
+    opacity: 0.55,
+    transmission: 0.75,
+    thickness: 0.12,
     clearcoat: 1.0,
-    clearcoatRoughness: 0.05,
+    clearcoatRoughness: 0.08,
   });
   const addWindow = (x: number, z: number, ry: number, w: number, h = 1.5, y = 1.8) => {
     const glass = windowGlassMat.clone();
     windowMaterials.push(glass);
-    const frame = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, h + 0.3, 0.12), beamMat);
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(w + 0.34, h + 0.34, 0.14), beamMat);
     frame.position.set(x, y, z);
     frame.rotation.y = ry;
     houseRoot.add(frame);
-    const pane = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.1), glass);
+    // Croisillon (meneau) central : deux carreaux comme une vraie fenêtre
+    const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.07, h, 0.16), beamMat);
+    mullion.position.set(x, y, z);
+    mullion.rotation.y = ry;
+    houseRoot.add(mullion);
+    const transom = new THREE.Mesh(new THREE.BoxGeometry(w, 0.07, 0.16), beamMat);
+    transom.position.set(x, y, z);
+    transom.rotation.y = ry;
+    houseRoot.add(transom);
+    const pane = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.06), glass);
     pane.position.set(x, y, z + (ry === 0 ? 0.05 : 0));
     pane.rotation.y = ry;
     houseRoot.add(pane);
@@ -299,67 +307,59 @@ export function buildMaison(): MaisonLayout {
   doorPivot.position.set(-0.8, 0, Z_MAX + 0.05);
   houseRoot.add(doorPivot);
 
-  const doorMat = new THREE.MeshPhysicalMaterial({
-    color: 0x2b1b5e,
-    emissive: COLORS.violet,
-    emissiveIntensity: 0.55,
-    roughness: 0.4,
-    metalness: 0.2,
-    clearcoat: 0.7,
-    clearcoatRoughness: 0.2,
+  // Porte en bois massif avec petits carreaux vitrés en haut
+  const doorMat = new THREE.MeshStandardMaterial({
+    color: 0x6b4226,
+    roughness: 0.55,
+    metalness: 0.05,
   });
   const door = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.5, 0.14), doorMat);
   door.position.set(0.8, 1.25, 0);
   doorPivot.add(door);
+  // Vitrage haut de la porte (lueur chaude)
+  const doorGlassMat = windowGlassMat.clone();
+  windowMaterials.push(doorGlassMat);
+  const doorGlass = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.7, 0.05), doorGlassMat);
+  doorGlass.position.set(0.8, 1.9, 0.08);
+  doorPivot.add(doorGlass);
+  // Petit croisillon du vitrage
+  const doorMullion = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.7, 0.06), beamMat);
+  doorMullion.position.set(0.8, 1.9, 0.1);
+  doorPivot.add(doorMullion);
 
-  // Poignée lumineuse
-  const knobMat = new THREE.MeshBasicMaterial({
-    color: COLORS.cyan,
-    transparent: true,
-    opacity: 0.8,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
+  // Poignée laiton
+  const knobMat = new THREE.MeshStandardMaterial({
+    color: 0xc9a227,
+    roughness: 0.3,
+    metalness: 0.9,
   });
-  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 12), knobMat);
-  knob.position.set(1.35, 1.25, 0.12);
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 12), knobMat);
+  knob.position.set(1.35, 1.15, 0.12);
   doorPivot.add(knob);
-  breathers.push({ mat: knobMat, base: 0.6, amp: 0.3, speed: 1.2, phase: 4 });
 
-  // Encadrement de porte lumineux (arche cyan)
-  const doorFrameMat = new THREE.MeshBasicMaterial({
-    color: COLORS.cyan,
-    transparent: true,
-    opacity: 0.55,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    side: THREE.DoubleSide,
+  // Encadrement de porte en bois blanc (comme les fenêtres)
+  const doorFrameMat = new THREE.MeshStandardMaterial({
+    color: 0xf2eee6,
+    roughness: 0.6,
+    metalness: 0.05,
   });
-  ringMaterials.push(doorFrameMat);
-  const doorFrameLeft = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.6, 0.08), doorFrameMat);
-  doorFrameLeft.position.set(-0.85, 1.3, Z_MAX + 0.12);
+  const doorFrameLeft = new THREE.Mesh(new THREE.BoxGeometry(0.14, 2.7, 0.2), doorFrameMat);
+  doorFrameLeft.position.set(-0.85, 1.35, Z_MAX + 0.1);
   houseRoot.add(doorFrameLeft);
-  const doorFrameRight = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.6, 0.08), doorFrameMat);
-  doorFrameRight.position.set(0.85, 1.3, Z_MAX + 0.12);
+  const doorFrameRight = new THREE.Mesh(new THREE.BoxGeometry(0.14, 2.7, 0.2), doorFrameMat);
+  doorFrameRight.position.set(0.85, 1.35, Z_MAX + 0.1);
   houseRoot.add(doorFrameRight);
-  const doorFrameTop = new THREE.Mesh(new THREE.BoxGeometry(1.78, 0.08, 0.08), doorFrameMat);
-  doorFrameTop.position.set(0, 2.62, Z_MAX + 0.12);
+  const doorFrameTop = new THREE.Mesh(new THREE.BoxGeometry(1.84, 0.14, 0.2), doorFrameMat);
+  doorFrameTop.position.set(0, 2.72, Z_MAX + 0.1);
   houseRoot.add(doorFrameTop);
-  breathers.push({ mat: doorFrameMat, base: 0.45, amp: 0.2, speed: 1.0, phase: 5 });
 
-  // Lampe au-dessus de la porte
-  const porchLightMat = new THREE.MeshBasicMaterial({
-    color: 0xffe9b0,
-    transparent: true,
-    opacity: 0.9,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-  });
-  const porchLight = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 10), porchLightMat);
-  porchLight.position.set(0, 3.0, Z_MAX + 0.3);
+  // Applique au-dessus de la porte (lanterne chaude réaliste)
+  const porchLightMat = new THREE.MeshBasicMaterial({ color: 0xffe2a8 });
+  const porchLight = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 12), porchLightMat);
+  porchLight.position.set(0, 2.95, Z_MAX + 0.3);
   houseRoot.add(porchLight);
-  breathers.push({ mat: porchLightMat, base: 0.7, amp: 0.25, speed: 0.9, phase: 6 });
-  const porchPoint = new THREE.PointLight(0xffd9a0, 1.0, 6, 2);
-  porchPoint.position.set(0, 3.0, Z_MAX + 0.4);
+  const porchPoint = new THREE.PointLight(0xffd9a0, 1.4, 7, 2);
+  porchPoint.position.set(0, 3.0, Z_MAX + 0.45);
   houseRoot.add(porchPoint);
   root.userData.porchLight = porchPoint;
 
@@ -384,22 +384,35 @@ export function buildMaison(): MaisonLayout {
   houseRoot.add(partition(-6.5, 9, -6.5, 5.6));
   houseRoot.add(partition(-6.5, 4, -6.5, -3));
 
+  // ============ SOL INTÉRIEUR : PARQUET BOIS (planches le long de X) ============
+  const floorMat = new THREE.MeshStandardMaterial({
+    color: 0x9c7350,
+    roughness: 0.7,
+    metalness: 0.0,
+  });
+  for (let i = 0; i < 17; i++) {
+    const plank = new THREE.Mesh(new THREE.BoxGeometry(W - 0.4, 0.06, (D - 0.6) / 17), floorMat);
+    plank.position.set(0, 0.03, Z_MIN + 0.3 + 0.3 + i * ((D - 0.6) / 17));
+    // léger nuance de teinte planche par planche
+    plank.material = floorMat.clone();
+    (plank.material as THREE.MeshStandardMaterial).color.offsetHSL(0, 0, (i % 3) * 0.008 - 0.008);
+    houseRoot.add(plank);
+  }
+
   // ============ PLAFOND INTÉRIEUR (invisible de l'extérieur grâce au toit) ============
   const ceilMat = new THREE.MeshStandardMaterial({
-    color: 0x14102e,
-    roughness: 0.8,
-    metalness: 0.05,
-    emissive: 0x06040e,
-    emissiveIntensity: 0.5,
+    color: 0xf3efe7,
+    roughness: 0.95,
+    metalness: 0.0,
     side: THREE.DoubleSide,
   });
   const ceiling = new THREE.Mesh(new THREE.BoxGeometry(W, 0.2, D), ceilMat);
   ceiling.position.set(0, H + 0.1, -1);
   houseRoot.add(ceiling);
 
-  // Poutres apparentes du plafond (style chaleureux)
+  // Poutres apparentes du plafond (bois chaud)
   for (let i = 0; i < 6; i++) {
-    const beam = new THREE.Mesh(new THREE.BoxGeometry(W - 0.5, 0.22, 0.28), beamMat);
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(W - 0.5, 0.22, 0.28), woodMat);
     beam.position.set(0, H - 0.05, Z_MIN + 1 + i * (D - 2) / 5);
     houseRoot.add(beam);
   }
@@ -437,9 +450,9 @@ export function buildMaison(): MaisonLayout {
     glassMat.emissiveIntensity = 0.5;
     windowMaterials.push(glassMat);
     const frameMatG = new THREE.MeshStandardMaterial({
-      color: 0x2a2050,
-      roughness: 0.5,
-      metalness: 0.3,
+      color: 0xe8e2d6,
+      roughness: 0.6,
+      metalness: 0.05,
     });
 
     // Soubassement bas (0.35) sur tout le périmètre, sauf côté maison
@@ -507,60 +520,50 @@ export function buildMaison(): MaisonLayout {
       root.add(gable);
     }
 
-    // Sol de la serre : terre sombre + allée lumineuse centrale
-    const ghFloor = new THREE.Mesh(new THREE.BoxGeometry(GH_X * 2, 0.1, GH_Z1 - GH_Z2), new THREE.MeshStandardMaterial({ color: 0x1c1430, roughness: 0.9 }));
+    // Sol de la serre : terre de jardin + allée centrale en dalles
+    const ghFloor = new THREE.Mesh(new THREE.BoxGeometry(GH_X * 2, 0.1, GH_Z1 - GH_Z2), new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 1.0 }));
     ghFloor.position.set(0, -0.05, (GH_Z1 + GH_Z2) / 2);
     root.add(ghFloor);
+    for (let i = 0; i < 4; i++) {
+      const step = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.05, 0.9), new THREE.MeshStandardMaterial({ color: 0x9c948a, roughness: 0.9 }));
+      step.position.set(0, 0.03, GH_Z1 - 1.1 - i * 1.3);
+      root.add(step);
+    }
     const ghPath = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.04, GH_Z1 - GH_Z2 - 0.6), skirtMat);
     ghPath.position.set(0, 0.02, (GH_Z1 + GH_Z2) / 2 - 0.2);
     root.add(ghPath);
 
-    // Arche lumineuse à l'entrée de la serre (côté maison)
-    const archMat = new THREE.MeshBasicMaterial({
-      color: COLORS.green,
-      transparent: true,
-      opacity: 0.7,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    });
-    const archTop = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.1, 0.1), archMat);
-    archTop.position.set(0, GH_H - 0.15, GH_Z1);
-    root.add(archTop);
+    // Montants blancs de l'entrée de la serre (côté maison)
     for (const sx of [-2.2, 2.2]) {
-      const archSide = new THREE.Mesh(new THREE.BoxGeometry(0.1, GH_H - 0.35, 0.1), archMat);
+      const archSide = new THREE.Mesh(new THREE.BoxGeometry(0.14, GH_H - 0.35, 0.14), frameMatG);
       archSide.position.set(sx, (GH_H - 0.35) / 2 + 0.35, GH_Z1);
       root.add(archSide);
     }
-    breathers.push({ mat: archMat, base: 0.6, amp: 0.3, speed: 1.1, phase: 1.2 });
   }
 
-  // ============ ENSEIGNE (au-dessus de la porte) ============
+  // ============ PLAQUE DE MAISON (gravée, discrète, au-dessus de la porte) ============
   const signCanvas = document.createElement("canvas");
   signCanvas.width = 512;
-  signCanvas.height = 128;
+  signCanvas.height = 96;
   const sctx = signCanvas.getContext("2d");
   if (sctx) {
-    sctx.font = "600 44px Orbitron, sans-serif";
+    sctx.fillStyle = "#3a2e24";
+    sctx.fillRect(0, 0, 512, 96);
+    sctx.font = "500 40px Georgia, serif";
     sctx.textAlign = "center";
     sctx.textBaseline = "middle";
-    sctx.shadowColor = "#00e5ff";
-    sctx.shadowBlur = 18;
-    sctx.fillStyle = "#9feaff";
-    sctx.fillText("MAISON D'ORIGIN", 256, 64);
+    sctx.fillStyle = "#e8d9b8";
+    sctx.fillText("Maison d'Origin", 256, 50);
   }
   const signTex = new THREE.CanvasTexture(signCanvas);
-  const signMat = new THREE.MeshBasicMaterial({
+  const signMat = new THREE.MeshStandardMaterial({
     map: signTex,
-    transparent: true,
-    opacity: 0.95,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    side: THREE.DoubleSide,
+    roughness: 0.8,
+    metalness: 0.0,
   });
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.15), signMat);
-  sign.position.set(0, 3.6, Z_MAX + 0.15);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.5), signMat);
+  sign.position.set(0, 3.15, Z_MAX + 0.22);
   houseRoot.add(sign);
-  breathers.push({ mat: signMat, base: 0.85, amp: 0.15, speed: 0.5, phase: 0 });
 
   const houseInfo = new THREE.Object3D();
   root.add(houseInfo);

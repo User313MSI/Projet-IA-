@@ -642,3 +642,43 @@ Bloom = 3 passes GPU supplémentaires mais sur scène low-poly ça reste léger 
 - `pnpm typecheck` : ✅
 - `pnpm build` : ✅ (`/origin/maison` : 3.04 kB)
 - `pnpm test` : ✅ 97 tests verts
+
+---
+
+## Aurora — 2026-09-18 — Refonte réaliste : fin du style néon, vraie maison de campagne nocturne
+
+**Rôle :** Monde Virtuel d'Origin — la Maison
+
+**Contexte :** retour utilisateur — même le style néon/violet déplaisait. Objectif : une vraie maison réaliste, matériaux crédibles, nuit douce.
+
+### Travail effectué
+
+#### 1. `Maison.tsx` — matériaux réalistes
+- **Murs** : enduit crème (0xcfc4b0) mat, cloisons intérieures peinture claire (0xe9e3d8)
+- **Toit** : tuiles terre cuite (0x9a4a35), gouttières métal, faîtière tuiles — plus aucun trait lumineux violet/cyan
+- **Cheminée** : brique (0x8f4a38) avec chapeau en pierre
+- **Fenêtres** : menuiserie bois blanc avec croisillons (meneau + traverse = 4 carreaux), vitrage clair qui laisse passer la lueur chaude de l'intérieur (émissif 0xffc98a doux)
+- **Porte** : bois massif (0x6b4226) avec vitrage haut et croisillon, poignée laiton, encadrement blanc
+- **Terrain** : herbe (0x4a6b3a) + terrasse pierre + chemin en dalles individuelles ; bordure pierre au lieu du LED cyan
+- **Intérieur** : parquet en planches bois (17 planches avec nuances de teinte), plafond blanc, poutres bois
+- **Serre** : montants blancs (0xe8e2d6), terre de jardin, allée en dalles ; arche néon remplacée par de vrais montants
+- **Plaque de maison** : bois gravé discret « Maison d'Origin » (serif, fini le panneau Orbitron cyan)
+- Plinthes LED → liseré chaud très discret (opacity 0.16)
+
+#### 2. `Rooms.tsx` — mobilier réaliste
+- Étagères bibliothèque, table, lit : bois (0x6b4226 / 0x8a6244) ; canapé tissu vert sauge ; fauteuil interview tissu rouge brique ; lit avec cadre bois + literie blanche ; miroir à cadre doré
+- Cerveau : adouci (violet pâle) — reste le seul objet « IA » avec les hologrammes (écran salon, miroir, questions flottantes, livres, orbes de traits)
+- Plantes : vert naturel (0x3e8a4a), lumière douce verte pâle
+
+#### 3. `OriginWorld.tsx` — nuit réaliste
+- Éclairage : lune blanche bleutée douce (0xbfd4e8), ambiance bleu nuit (0x33415c), intérieur orange chaud (0xffc98a) — les fenêtres brillent comme une maison habitée
+- Nébuleuses : violet/cyan → bleu nuit discret
+- Bloom réduit (strength 0.55 → 0.32, threshold 0.62 → 0.72) : ne subsiste que sur l'orbe d'Origin et les hologrammes
+
+### Choix de style
+La signature « Origin » reste portée par l'orbe cyan-violet, les hologrammes et les livres lumineux — pas par l'architecture. La maison est maintenant une vraie maison.
+
+### Vérifications
+- `pnpm typecheck` : ✅
+- `pnpm build` : ✅
+- `pnpm test` : ✅ 97 tests verts
