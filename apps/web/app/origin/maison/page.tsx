@@ -101,7 +101,7 @@ export default function MaisonPage() {
         }}
       >
         <div style={{ textAlign: "center" }}>
-          <p style={{ fontSize: 16 }}>Impossible de charger la maison d&apos;Origin</p>
+          <p style={{ fontSize: 16 }}>Impossible de charger le laboratoire d&apos;Origin</p>
           <p style={{ fontSize: 13, color: "var(--text-mute)" }}>{error}</p>
           <a href="/origin" style={{ color: "var(--cyan, #00e5ff)", fontSize: 13 }}>
             ← Retour au cerveau
@@ -162,7 +162,7 @@ export default function MaisonPage() {
               filter: "drop-shadow(0 0 14px rgba(124,77,255,0.35))",
             }}
           >
-            Maison d&apos;Origin
+            Laboratoire d&apos;Origin
           </span>
         </h1>
         {data && (

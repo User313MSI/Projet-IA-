@@ -250,8 +250,8 @@ export default function OriginPage() {
               fontFamily: "var(--display)",
             }}
           >
-            <span style={{ fontSize: "15px" }}>🏠</span>
-            Maison
+            <span style={{ fontSize: "15px" }}>🔬</span>
+            Laboratoire
           </a>
           {(["brain", "interview", "personality", "knowledge"] as const).map((tab) => {
             const labels: Record<string, { icon: string; text: string; badge?: number; color: string }> = {

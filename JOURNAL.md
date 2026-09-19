@@ -756,3 +756,27 @@ La signature « Origin » reste portée par l'orbe cyan-violet, les hologrammes 
 - `pnpm typecheck` : ✅
 - `pnpm build` : ✅
 - `pnpm test` : ✅ 97 tests verts
+
+## Aurora — 2026-09-19 — Pivot : abandon de la maison, refonte LABORATOIRE (Origin dans sa cuve)
+
+**Rôle :** Monde Virtuel d'Origin — devient le **Laboratoire**.
+
+**Décision :** l'utilisateur abandonne le concept de maison. Origin vit désormais dans un **laboratoire futuriste** : une **cuve** de confinement en son centre, avec l'orbe d'Origin dedans, et des **panneaux holographiques** tout autour affichant son état, ses événements, ses données. **Navigation souris uniquement** : plus aucun clavier (WASD/flèches), plus de regard haut/bas — tout est **en face de l'utilisateur**, comme face à un écran ; un clic sur un module rapproche la caméra, un clic sur le fond ramène à la vue d'ensemble. Les objets restent modélisés en 3D, mais sans déplacement libre.
+
+### OriginWorld.tsx — réécriture complète (~670 lignes)
+- **Salle hexagonale** sombre (sol 6 segments, rayon 16), 3 anneaux néon respirants, plaque centrale, ciel étoilé (1200 points), bloom (0.42/0.55/0.68).
+- **La cuve** au centre : socle + collier métalliques, cylindre de verre (`MeshPhysicalMaterial` transmission 0.85), fluide émissif violet, surface animée, couvercle torique, orbe Origin (cœur 0.34 + sphère blanche intérieure + halo cyan + 3 anneaux violets), 48 particules dérivantes, 4 câbles, 2 anneaux de scan cyan.
+- **5 panneaux holographiques** en arc derrière la cuve, tous visibles depuis la vue par défaut : `status` (cyan), `memory` (vert), `questions` (rose), `personality` (violet), `growth` (or). Chacun affiche 3 lignes de **vraies données** via `buildPanelBodies()` (état, docs/passages/sessions, questions en attente via `pendingQuestions()`, traits de personnalité, humeur) sur texture canvas.
+- **Navigation** : `ViewSpec {pos, look}` par module ; clic (raycast sur zones invisibles) → lerp doux de la caméra ; clic sur le fond → retour vue d'ensemble + `onSelection(null)` ; détection de drag (>4 px) pour ne pas cliquer par accident ; hint contextuel.
+- Exports inchangés (`WorldData`, `SelectionState`, défaut) — `maison/page.tsx` compile sans modification de son code logique.
+- Orbe réactive aux données : le ratio de questions répondues module la taille du cœur et l'émissive du fluide.
+
+### Nettoyage (code mort de la maison)
+- Supprimés : `world/{Maison,Rooms,OriginAvatar}.tsx`, `world/{models,kit,palette}.ts`, et les 23 GLB de `public/models/` (vérifié : plus aucun import).
+- `app/origin/page.tsx` : bouton "🏡 Maison" → "🔬 Laboratoire". `app/origin/maison/page.tsx` : titre "Laboratoire d'Origin", message d'erreur adapté.
+
+### Vérifications
+- `pnpm --filter web exec tsc --noEmit` : ✅
+- `pnpm --filter web build` : ✅ (`/origin/maison` : 3.04 kB)
+- `pnpm test` : ✅ 97 tests verts (agent-core 71, personality 14, knowledge 12)
+- `Brain3D.tsx`, `app/api/*`, `packages/*` : non touchés.
